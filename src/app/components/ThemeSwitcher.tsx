@@ -55,6 +55,11 @@ const themes = [
   { name: "Patina", path: "/patina", color: "#43B3A0", icon: "⬡" },
   { name: "Axiom", path: "/axiom", color: "#1848CC", icon: "∑" },
   { name: "Darkfield", path: "/darkfield", color: "#4D9EFF", icon: "◎" },
+  { name: "Liminal", path: "/liminal", color: "#8BBCC8", icon: "▫" },
+  { name: "Herbarium", path: "/herbarium", color: "#2D5A3D", icon: "✿" },
+  { name: "Hologram", path: "/hologram", color: "#E8C8FF", icon: "⬙" },
+  { name: "Sonar", path: "/sonar", color: "#00FF88", icon: "〰" },
+  { name: "Solarpunk", path: "/solarpunk", color: "#1A8A4A", icon: "☀" },
 ];
 
 export default function ThemeSwitcher({
