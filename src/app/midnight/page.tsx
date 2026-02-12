@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -179,7 +180,7 @@ function ProjectCard({
       {/* Background project image */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden", opacity: 0.06, borderRadius: 2 }}>
         <img
-          src={project.image}
+          src={getProjectImage("midnight", project.image)}
           alt=""
           loading="lazy"
           style={{

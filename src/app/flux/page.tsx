@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -84,7 +85,7 @@ function ProjectCard({
   const imageBlock = (
     <div className="relative overflow-hidden rounded-2xl group/img" style={{ aspectRatio: "4/3" }}>
       <motion.img
-        src={project.image}
+        src={getProjectImage("flux", project.image)}
         alt={project.title}
         loading="lazy"
         className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-105"

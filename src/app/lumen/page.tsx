@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─────────────────── Colors ─────────────────── */
 const ABYSS = "#020B18";
@@ -624,7 +625,7 @@ export default function LumenPage() {
                 {/* Project Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={project.image}
+                    src={getProjectImage("lumen", project.image)}
                     alt={project.title.replace("\n", " ")}
                     className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     style={{

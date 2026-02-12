@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -83,7 +84,7 @@ function ProjectCard({
         {/* Project image */}
         <div style={{ margin: "-24px -24px 16px -24px", overflow: "hidden", position: "relative" }}>
           <img
-            src={project.image}
+            src={getProjectImage("brutal", project.image)}
             alt={project.title.replace(/\n/g, " ")}
             loading="lazy"
             style={{

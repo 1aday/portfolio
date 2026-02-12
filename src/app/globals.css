@@ -431,14 +431,30 @@
   color: rgba(0, 0, 0, 0.12);
 }
 
-@media (max-width: 640px) {
-  .ts-wrap {
-    bottom: 1rem;
-    right: 1rem;
+/* ─── Mobile: centered circle trigger ─── */
+@media (max-width: 767px) {
+  .ts-wrap-mobile {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 1.25rem;
+    align-items: center;
   }
-  .ts-trigger-name,
-  .ts-trigger-badge {
+  .ts-wrap-mobile .ts-trigger {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    padding: 0;
+    justify-content: center;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  }
+  .ts-wrap-mobile .ts-trigger-name,
+  .ts-wrap-mobile .ts-trigger-badge,
+  .ts-wrap-mobile .ts-trigger-chevron {
     display: none;
+  }
+  .ts-wrap-mobile .ts-trigger-icon-char {
+    font-size: 20px;
   }
   .ts-panel {
     width: 200px;
@@ -446,6 +462,163 @@
   .ts-list {
     max-height: 320px;
   }
+}
+
+/* ─── Rolodex Half-Circle Arc ─── */
+.ts-rolodex-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.ts-rolodex-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Close button */
+.ts-rolodex-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  z-index: 10;
+}
+.ts-rolodex-close:active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: scale(0.92);
+}
+
+/* Theme info display */
+.ts-rolodex-info {
+  position: absolute;
+  top: 28%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 5;
+  pointer-events: none;
+}
+.ts-rolodex-name {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.15s ease;
+}
+.ts-rolodex-num {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.ts-rolodex-badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-top: 2px;
+}
+
+/* Touch area covers lower portion */
+.ts-rolodex-touch {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  height: 45%;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Arc origin point */
+.ts-rolodex-arc {
+  position: relative;
+  width: 0;
+  height: 0;
+  margin-bottom: 10px;
+}
+
+/* Individual arc card */
+.ts-rolodex-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* Icon circle */
+.ts-rolodex-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 15, 15, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  transition: box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+
+/* Focused card gets bigger icon */
+.ts-rolodex-card-focused .ts-rolodex-icon {
+  width: 68px;
+  height: 68px;
+  font-size: 28px;
+  background: rgba(18, 18, 18, 0.95);
+}
+
+/* Swipe hint */
+.ts-rolodex-hint {
+  position: absolute;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: hintBob 2s ease-in-out infinite;
+}
+@keyframes hintBob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
 }
 
 /* Terminal theme - blinking cursor */

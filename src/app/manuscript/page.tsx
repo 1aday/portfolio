@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { motion, useInView, useScroll, useTransform } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ================================================================
    MANUSCRIPT — Illuminated Medieval Codex Portfolio
@@ -536,7 +537,7 @@ export default function ManuscriptPage() {
                             }}
                           >
                             <img
-                              src={project.image}
+                              src={getProjectImage("manuscript", project.image)}
                               alt={project.title.replace(/\n/g, " ")}
                               className="w-full aspect-[4/3] object-cover"
                               style={{

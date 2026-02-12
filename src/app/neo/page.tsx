@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Palette ─── */
 const accentColors = ["#3B82F6", "#22C55E", "#FACC15", "#EC4899", "#F97316"];
@@ -78,7 +79,7 @@ function ProjectCard({ project, index }: { project: (typeof projects)[number]; i
       {/* Project image */}
       <div style={{ margin: "-28px -24px 14px -24px", overflow: "hidden", borderRadius: "10px 10px 0 0", position: "relative" }}>
         <img
-          src={project.image}
+          src={getProjectImage("neo", project.image)}
           alt={project.title.replace(/\n/g, " ")}
           loading="lazy"
           style={{

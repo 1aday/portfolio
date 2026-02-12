@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Colors ─── */
 const C = {
@@ -691,7 +692,7 @@ function ProjectCard({
       {/* Image */}
       <div className="relative h-52 overflow-hidden">
         <Image
-          src={project.image}
+          src={getProjectImage("cipher", project.image)}
           alt={project.title}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"

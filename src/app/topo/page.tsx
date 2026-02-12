@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  TOPO THEME — Topographic / Cartographic Contour Map Aesthetic     */
@@ -480,7 +481,7 @@ function ProjectCard({
           {/* Left: Image */}
           <div className="relative w-full md:w-72 h-48 md:h-auto flex-shrink-0 overflow-hidden">
             <img
-              src={project.image}
+              src={getProjectImage("topo", project.image)}
               alt={project.title.replace("\n", " ")}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700"

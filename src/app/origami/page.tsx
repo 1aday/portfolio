@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════════
    ORIGAMI — Japanese Paper Fold Art Portfolio Theme
@@ -645,7 +646,7 @@ function ProjectCard({
         {/* Image area */}
         <div className="relative overflow-hidden" style={{ aspectRatio: "16/10" }}>
           <img
-            src={project.image}
+            src={getProjectImage("origami", project.image)}
             alt={project.title.replace("\n", " ")}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

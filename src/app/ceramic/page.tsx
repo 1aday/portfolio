@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color Palette ─── */
 const C = {
@@ -628,7 +629,7 @@ function ProjectCard({
       >
         {project.image && (
           <motion.img
-            src={project.image}
+            src={getProjectImage("ceramic", project.image)}
             alt={project.title}
             style={{
               width: "100%",

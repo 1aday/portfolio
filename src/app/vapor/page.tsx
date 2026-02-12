@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -110,7 +111,7 @@ function ProjectCard({
         {/* Project image */}
         <div style={{ margin: "-24px -24px 20px -24px", overflow: "hidden", borderRadius: "8px 8px 0 0", position: "relative" }}>
           <img
-            src={project.image}
+            src={getProjectImage("vapor", project.image)}
             alt={project.title.replace(/\n/g, " ")}
             loading="lazy"
             style={{

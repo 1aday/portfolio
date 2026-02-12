@@ -9,6 +9,7 @@ import {
 } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── palette ─── */
 const C = {
@@ -118,7 +119,7 @@ function DevelopingCard({
         {/* Image area */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
-            src={project.image}
+            src={getProjectImage("darkroom", project.image)}
             alt={project.title}
             className="w-full h-full object-cover transition-all duration-700"
             style={{

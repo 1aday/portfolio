@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─────────────────────────── COLORS ─────────────────────────── */
 const C = {
@@ -556,7 +557,7 @@ function ProjectCard({
         }}
       >
         <img
-          src={project.image}
+          src={getProjectImage("frost", project.image)}
           alt={project.title}
           loading="lazy"
           style={{

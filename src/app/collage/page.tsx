@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Palette ─── */
 const C = {
@@ -418,7 +419,7 @@ function ProjectCard({ project, index }: { project: (typeof projects)[number]; i
           }}
         >
           <img
-            src={project.image}
+            src={getProjectImage("collage", project.image)}
             alt={project.title.replace("\n", " ")}
             loading="lazy"
             className="w-full h-full object-cover"

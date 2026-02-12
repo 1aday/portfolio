@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SOLARPUNK — Photosynthetic Technology Portfolio Theme
@@ -553,7 +554,7 @@ function ProjectCard({
             style={{ background: `${C.sage}22` }}
           >
             <img
-              src={project.image}
+              src={getProjectImage("solarpunk", project.image)}
               alt={project.title.replace("\n", " ")}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               style={{

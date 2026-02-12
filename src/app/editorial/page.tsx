@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -71,7 +72,7 @@ function CoverStoryCard({
       {/* Project image */}
       <div style={{ marginBottom: 24, overflow: "hidden", position: "relative" }}>
         <img
-          src={project.image}
+          src={getProjectImage("editorial", project.image)}
           alt={project.title.replace(/\n/g, " ")}
           loading="lazy"
           style={{
@@ -220,7 +221,7 @@ function ColumnCard({
       {/* Project thumbnail */}
       <div style={{ float: "left", marginRight: 12, marginBottom: 8, width: 80, height: 56, overflow: "hidden", position: "relative", flexShrink: 0 }}>
         <img
-          src={project.image}
+          src={getProjectImage("editorial", project.image)}
           alt=""
           loading="lazy"
           style={{

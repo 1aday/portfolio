@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color constants ─── */
 const C = {
@@ -145,7 +146,7 @@ function ProjectCard({
           {/* Left: Image */}
           <div className="relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
             <img
-              src={project.image}
+              src={getProjectImage("carbon", project.image)}
               alt={project.title}
               loading="lazy"
               className="w-full h-full object-cover transition-all duration-700"

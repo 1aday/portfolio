@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  AXIOM THEME — Mathematical First Principles               */
@@ -351,7 +352,7 @@ function TheoremCard({
           style={{ border: `1px solid ${CONSTRUCTION_LINE}` }}
         >
           <img
-            src={project.image}
+            src={getProjectImage("axiom", project.image)}
             alt={project.title.replace(/\n/g, " ")}
             loading="lazy"
             className="w-full block transition-transform duration-700 group-hover:scale-[1.02]"

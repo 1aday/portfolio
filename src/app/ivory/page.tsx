@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Palette ─── */
 const C = {
@@ -261,7 +262,7 @@ function ProjectRow({
               {/* Project image (visible only when expanded) */}
               <div style={{ marginTop: 16, width: 200, height: 112, overflow: "hidden", borderRadius: 4, position: "relative", opacity: 0.5 }}>
                 <img
-                  src={project.image}
+                  src={getProjectImage("ivory", project.image)}
                   alt=""
                   loading="lazy"
                   style={{

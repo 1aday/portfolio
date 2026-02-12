@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color Palette ─── */
 const C = {
@@ -867,7 +868,7 @@ function ProjectCard({
           <TapeMark position="tr" />
           {project.image && (
             <img
-              src={project.image}
+              src={getProjectImage("sketch", project.image)}
               alt={project.title}
               style={{
                 width: "100%",

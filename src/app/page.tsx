@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "./data/projects";
 import ThemeSwitcher from "./components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 function RevealSection({
   children,
@@ -88,7 +89,7 @@ function ProjectCard({
           </span>
           <div style={{ width: 64, height: 64, overflow: "hidden", borderRadius: 4, position: "relative", flexShrink: 0 }}>
             <img
-              src={project.image}
+              src={getProjectImage("default", project.image)}
               alt=""
               loading="lazy"
               style={{

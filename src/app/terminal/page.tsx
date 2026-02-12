@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ───────── helpers ───────── */
 const GREEN = "#00FF41";
@@ -242,7 +243,7 @@ export default function TerminalPage() {
                     {/* Project thumbnail */}
                     <div style={{ marginTop: 8, marginLeft: 40, width: 120, height: 40, overflow: "hidden", position: "relative" }}>
                       <img
-                        src={project.image}
+                        src={getProjectImage("terminal", project.image)}
                         alt=""
                         loading="lazy"
                         style={{

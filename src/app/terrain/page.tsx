@@ -5,6 +5,7 @@ import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
 import Image from "next/image";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Color palette ─── */
 const C = {
@@ -361,7 +362,7 @@ function ProjectCard({
             }}
           />
           <Image
-            src={project.image}
+            src={getProjectImage("terrain", project.image)}
             alt={project.title.replace("\n", " ")}
             fill
             className="object-cover"

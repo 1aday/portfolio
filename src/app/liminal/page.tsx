@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════════
    LIMINAL — Hauntological Non-Places
@@ -481,7 +482,7 @@ export default function LiminalPage() {
                     {/* Project image with washed-out filter */}
                     <div className="relative w-full aspect-[16/10] overflow-hidden">
                       <Image
-                        src={project.image}
+                        src={getProjectImage("liminal", project.image)}
                         alt={project.title}
                         fill
                         className="object-cover transition-transform duration-[1.2s]"

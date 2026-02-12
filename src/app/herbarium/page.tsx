@@ -4,6 +4,7 @@ import { motion, useInView } from "motion/react";
 import { useRef } from "react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ─── Palette ─── */
 const C = {
@@ -505,7 +506,7 @@ function SpecimenCard({
           style={{ border: `1px solid ${C.tan}` }}
         >
           <img
-            src={project.image}
+            src={getProjectImage("herbarium", project.image)}
             alt={project.title.replace("\n", " ")}
             className="w-full h-full object-cover grayscale-[40%] sepia-[30%] opacity-90
                        group-hover:grayscale-0 group-hover:sepia-0 group-hover:opacity-100

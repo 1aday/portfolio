@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════
    COLORS
@@ -614,7 +615,7 @@ function ProjectCard({
         }}
       >
         <img
-          src={project.image}
+          src={getProjectImage("ember", project.image)}
           alt={project.title}
           style={{
             width: "100%",

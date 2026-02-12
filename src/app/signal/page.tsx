@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { motion, useInView } from "motion/react";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  CONSTANTS                                                  */
@@ -999,7 +1000,7 @@ export default function SignalPage() {
                               style={{ opacity: 0.12 }}
                             />
                             <img
-                              src={project.image}
+                              src={getProjectImage("signal", project.image)}
                               alt={title}
                               loading="lazy"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

@@ -5,6 +5,7 @@ import { motion, useInView } from "motion/react";
 import Image from "next/image";
 import { projects, stats, expertise, tools } from "../data/projects";
 import ThemeSwitcher from "../components/ThemeSwitcher";
+import { getProjectImage } from "@/lib/theme-images";
 
 /* ── Colors ── */
 const BG = "#08080E";
@@ -326,7 +327,7 @@ function ProjectCard({ project, index, rarity }: {
             <span className={mono} style={{ fontSize: 11, color: MUTED }}>{project.year}</span>
           </div>
 
-          <FoilImage src={project.image} alt={project.title} />
+          <FoilImage src={getProjectImage("hologram", project.image)} alt={project.title} />
 
           <h3 className={heading} style={{ fontSize: "clamp(1rem,2vw,1.2rem)", fontWeight: 700,
             color: TEXT, marginTop: 20, marginBottom: 4, lineHeight: 1.3, whiteSpace: "pre-line" }}>
