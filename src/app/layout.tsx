@@ -1,102 +1,5 @@
 import type { Metadata } from "next";
-import {
-  Cormorant_Garamond,
-  Outfit,
-  Playfair_Display,
-  Inter,
-  Space_Grotesk,
-  JetBrains_Mono,
-  Instrument_Serif,
-  Manrope,
-  DM_Serif_Display,
-  Josefin_Sans,
-  Orbitron,
-  Sora,
-  Plus_Jakarta_Sans,
-} from "next/font/google";
 import "./globals.css";
-
-const outfit = Outfit({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "700"],
-  style: ["normal", "italic"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
-});
-
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument",
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-});
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const dmSerif = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
-});
-
-const josefinSans = Josefin_Sans({
-  variable: "--font-josefin",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: "Grox — AI Product Studio",
@@ -111,9 +14,30 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" style={{ scrollBehavior: "smooth" }}>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=DM+Serif+Display:ital@0;1&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;700&family=Josefin+Sans:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${outfit.variable} ${cormorant.variable} ${playfair.variable} ${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${manrope.variable} ${dmSerif.variable} ${josefinSans.variable} ${orbitron.variable} ${sora.variable} ${plusJakarta.variable} antialiased`}
-        style={{ fontFamily: "var(--font-body)" }}
+        className="antialiased"
+        style={{
+          fontFamily: "'Outfit', sans-serif",
+          ["--font-body" as string]: "'Outfit', sans-serif",
+          ["--font-display" as string]: "'Cormorant Garamond', serif",
+          ["--font-playfair" as string]: "'Playfair Display', serif",
+          ["--font-inter" as string]: "'Inter', sans-serif",
+          ["--font-space-grotesk" as string]: "'Space Grotesk', sans-serif",
+          ["--font-jetbrains" as string]: "'JetBrains Mono', monospace",
+          ["--font-instrument" as string]: "'Instrument Serif', serif",
+          ["--font-manrope" as string]: "'Manrope', sans-serif",
+          ["--font-dm-serif" as string]: "'DM Serif Display', serif",
+          ["--font-josefin" as string]: "'Josefin Sans', sans-serif",
+          ["--font-orbitron" as string]: "'Orbitron', sans-serif",
+          ["--font-sora" as string]: "'Sora', sans-serif",
+          ["--font-jakarta" as string]: "'Plus Jakarta Sans', sans-serif",
+        }}
       >
         {children}
       </body>
