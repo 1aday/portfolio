@@ -299,8 +299,10 @@ export default function ThemeSwitcher({
                   position: "relative",
                 }}>
                 <span style={{
-                  fontSize: isMobile ? 20 : 24, lineHeight: 1, color: theme.color,
-                  opacity: isActive ? 1 : isVisited ? 0.7 : 0.5,
+                  fontSize: isMobile ? 20 : 24, lineHeight: 1,
+                  color: isVisited && !isActive ? "rgba(255,255,255,0.25)" : theme.color,
+                  filter: isVisited && !isActive ? "grayscale(1)" : "none",
+                  opacity: isActive ? 1 : 0.85,
                   transition: "opacity 0.2s",
                 }}>
                   {theme.icon}
