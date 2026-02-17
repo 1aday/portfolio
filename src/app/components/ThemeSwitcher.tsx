@@ -191,7 +191,7 @@ export default function ThemeSwitcher({
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) setIsOpen(false);
       if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
-      if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+      if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goNext(); }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
@@ -478,6 +478,52 @@ export default function ThemeSwitcher({
           </button>
         )}
       </div>
+
+      {/* ─── Keyboard hint (desktop only) ─── */}
+      {!isMobile && !isOpen && (
+        <div style={{
+          textAlign: "center",
+          padding: "0 0 12px",
+          pointerEvents: "none",
+        }}>
+          <span style={{
+            fontSize: 9,
+            color: "rgba(255,255,255,0.15)",
+            letterSpacing: "0.06em",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}>
+            <kbd style={{
+              padding: "1px 5px",
+              borderRadius: 3,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.04)",
+              fontSize: 8,
+              fontFamily: "inherit",
+            }}>←</kbd>
+            <kbd style={{
+              padding: "1px 5px",
+              borderRadius: 3,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.04)",
+              fontSize: 8,
+              fontFamily: "inherit",
+            }}>→</kbd>
+            navigate
+            <span style={{ margin: "0 2px", opacity: 0.4 }}>·</span>
+            <kbd style={{
+              padding: "1px 6px",
+              borderRadius: 3,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.04)",
+              fontSize: 8,
+              fontFamily: "inherit",
+            }}>space</kbd>
+            next
+          </span>
+        </div>
+      )}
     </div>
   );
 }
