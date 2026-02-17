@@ -32,13 +32,12 @@ function Styles() {
   return (
     <style>{`
       @keyframes shimmer { 0% { background-position: 0% 50% } 50% { background-position: 100% 50% } 100% { background-position: 0% 50% } }
-      @keyframes rotate-angle { from { --border-angle: 0deg } to { --border-angle: 360deg } }
+      @keyframes holo-border-shift { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
       @keyframes speckle-drift { 0%,100% { transform: translate(0,0) } 50% { transform: translate(2px,-1px) } }
-      @property --border-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
       .holo-shimmer { background: ${RAINBOW}; background-size: 300% 300%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 8s ease infinite; }
-      .holo-wrap { background: conic-gradient(from var(--border-angle,0deg),${MAGENTA},${VIOLET},${CYAN},${GOLD},${MAGENTA}); animation: rotate-angle 4s linear infinite; padding: 1px; border-radius: 12px; }
-      .holo-wrap:hover { background: conic-gradient(from var(--border-angle,0deg),${GOLD},${GOLD}88,${CYAN},${GOLD}88,${GOLD}); padding: 2px; }
-      .holo-conic { background: conic-gradient(from var(--border-angle,0deg),${MAGENTA}08,${VIOLET}08,${CYAN}08,${GOLD}08,${MAGENTA}08); animation: rotate-angle 20s linear infinite; }
+      .holo-wrap { background: linear-gradient(135deg,${MAGENTA},${VIOLET},${CYAN},${GOLD},${MAGENTA}); background-size: 300% 300%; animation: shimmer 4s ease infinite; padding: 1px; border-radius: 12px; }
+      .holo-wrap:hover { padding: 2px; filter: brightness(1.2); }
+      .holo-conic { background: linear-gradient(135deg,${MAGENTA}08,${VIOLET}08,${CYAN}08,${GOLD}08); background-size: 400% 400%; animation: shimmer 20s ease infinite; }
     `}</style>
   );
 }

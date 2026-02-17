@@ -34,23 +34,9 @@ const POOL_GRAD = `linear-gradient(180deg, ${SILVER}18, transparent)`;
 function Styles() {
   return (
     <style>{`
-      @property --mercury-angle {
-        syntax: '<angle>';
-        initial-value: 0deg;
-        inherits: false;
-      }
-      @property --blob-r1 { syntax: '<percentage>'; initial-value: 60%; inherits: false; }
-      @property --blob-r2 { syntax: '<percentage>'; initial-value: 40%; inherits: false; }
-      @property --blob-r3 { syntax: '<percentage>'; initial-value: 55%; inherits: false; }
-      @property --blob-r4 { syntax: '<percentage>'; initial-value: 45%; inherits: false; }
-      @property --blob-r5 { syntax: '<percentage>'; initial-value: 50%; inherits: false; }
-      @property --blob-r6 { syntax: '<percentage>'; initial-value: 60%; inherits: false; }
-      @property --blob-r7 { syntax: '<percentage>'; initial-value: 42%; inherits: false; }
-      @property --blob-r8 { syntax: '<percentage>'; initial-value: 58%; inherits: false; }
-
       @keyframes mercury-rotate {
-        from { --mercury-angle: 0deg; }
-        to { --mercury-angle: 360deg; }
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
       @keyframes blob-morph {
         0%, 100% {
@@ -112,8 +98,9 @@ function Styles() {
         100% { filter: blur(0); opacity: 1; }
       }
       @keyframes border-flow {
-        from { --mercury-angle: 0deg; }
-        to { --mercury-angle: 360deg; }
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
       }
       .mercury-chrome-text {
         background: linear-gradient(
@@ -139,8 +126,9 @@ function Styles() {
         color: transparent;
       }
       .mercury-border-anim {
-        background: conic-gradient(from var(--mercury-angle, 0deg), ${DARK_REFLECT}, ${SILVER}, ${CHROME}, ${SILVER}, ${DARK_REFLECT});
-        animation: mercury-rotate 4s linear infinite;
+        background: linear-gradient(135deg, ${DARK_REFLECT}, ${SILVER}, ${CHROME}, ${SILVER}, ${DARK_REFLECT});
+        background-size: 300% 300%;
+        animation: chrome-shimmer 4s ease infinite;
         padding: 1px;
         border-radius: 12px;
       }

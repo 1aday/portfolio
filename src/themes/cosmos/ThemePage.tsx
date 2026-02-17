@@ -86,7 +86,7 @@ function ConstellationLines({ count }: { count: number }) {
    * a responsive overlay approach: horizontal lines between columns,
    * vertical lines between rows.  The SVG is purely decorative.
    */
-  const cols = typeof window !== "undefined" && window.innerWidth >= 1024 ? 3 : typeof window !== "undefined" && window.innerWidth >= 640 ? 2 : 1;
+  const cols = 3; // Decorative SVG lines — grid layout handled by CSS
   const rows = Math.ceil(count / cols);
   const lines: { x1: string; y1: string; x2: string; y2: string }[] = [];
 

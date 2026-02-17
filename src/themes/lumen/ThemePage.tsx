@@ -251,8 +251,10 @@ export default function LumenPage() {
       {/* ───────── FLOATING BIO-ORBS ───────── */}
       <div className="fixed inset-0 pointer-events-none z-[2]">
         {BIO_ORBS.map((orb, i) => {
-          const distX = mousePos.x - (typeof window !== "undefined" ? window.innerWidth * parseFloat(orb.x) / 100 : 0);
-          const distY = mousePos.y - (typeof window !== "undefined" ? window.innerHeight * parseFloat(orb.y) / 100 : 0);
+          const w = typeof window !== "undefined" ? window.innerWidth : 1440;
+          const h = typeof window !== "undefined" ? window.innerHeight : 900;
+          const distX = mousePos.x - w * parseFloat(orb.x) / 100;
+          const distY = mousePos.y - h * parseFloat(orb.y) / 100;
           const dist = Math.sqrt(distX * distX + distY * distY);
           const proximity = Math.max(0, 1 - dist / 500);
 
