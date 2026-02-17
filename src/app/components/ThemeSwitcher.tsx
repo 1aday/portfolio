@@ -218,12 +218,15 @@ export default function ThemeSwitcher({
       <div style={{
         position: "absolute",
         bottom: isMobile ? 76 : 72,
-        left: isMobile ? 8 : "auto",
-        right: isMobile ? 8 : 24,
-        maxWidth: isMobile ? "none" : 480,
+        left: isMobile ? 8 : "50%",
+        right: isMobile ? 8 : "auto",
+        maxWidth: isMobile ? "none" : 640,
+        width: isMobile ? "auto" : "90vw",
         maxHeight: isOpen ? "70vh" : 0,
         opacity: isOpen ? 1 : 0,
-        transform: isOpen ? "translateY(0)" : "translateY(16px)",
+        transform: isMobile
+          ? (isOpen ? "translateY(0)" : "translateY(16px)")
+          : (isOpen ? "translateX(-50%) translateY(0)" : "translateX(-50%) translateY(16px)"),
         transition: "all 0.3s cubic-bezier(0.23,1,0.32,1)",
         overflow: "hidden",
         borderRadius: 16,
@@ -264,7 +267,7 @@ export default function ThemeSwitcher({
         {/* Grid */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(auto-fill, minmax(72px, 1fr))",
+          gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(auto-fill, minmax(76px, 1fr))",
           gap: 6,
           padding: "10px 10px 14px",
           overflowY: "auto",
@@ -345,7 +348,7 @@ export default function ThemeSwitcher({
         alignItems: "center",
         justifyContent: "center",
         gap: isMobile ? 6 : 0,
-        padding: isMobile ? "0 0 20px" : "0 24px 20px",
+        padding: isMobile ? "0 0 20px" : "0 0 20px",
         pointerEvents: "auto",
       }}>
         {/* Mobile: prev/next + center trigger */}
@@ -406,7 +409,7 @@ export default function ThemeSwitcher({
             fontSize: 11, fontWeight: 500, letterSpacing: "0.05em",
             cursor: "pointer",
             boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-            marginLeft: "auto",
+            margin: "0 auto",
           }}>
             <span style={{ fontSize: 14, lineHeight: 1, color: currentTheme.color }}>
               {currentTheme.icon}
