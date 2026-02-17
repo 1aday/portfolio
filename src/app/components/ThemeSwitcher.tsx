@@ -220,8 +220,8 @@ export default function ThemeSwitcher({
         bottom: isMobile ? 76 : 72,
         left: isMobile ? 8 : "50%",
         right: isMobile ? 8 : "auto",
-        maxWidth: isMobile ? "none" : 640,
-        width: isMobile ? "auto" : "90vw",
+        maxWidth: isMobile ? "none" : 860,
+        width: isMobile ? "auto" : "92vw",
         maxHeight: isOpen ? "70vh" : 0,
         opacity: isOpen ? 1 : 0,
         transform: isMobile
@@ -267,9 +267,9 @@ export default function ThemeSwitcher({
         {/* Grid */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(auto-fill, minmax(76px, 1fr))",
-          gap: 6,
-          padding: "10px 10px 14px",
+          gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(auto-fill, minmax(88px, 1fr))",
+          gap: 8,
+          padding: "12px 14px 16px",
           overflowY: "auto",
           maxHeight: "calc(70vh - 50px)",
           scrollbarWidth: "thin",
@@ -286,7 +286,7 @@ export default function ThemeSwitcher({
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center",
                   gap: 4,
-                  padding: "10px 4px 8px",
+                  padding: isMobile ? "10px 4px 8px" : "14px 6px 10px",
                   borderRadius: 10,
                   border: isActive
                     ? `1.5px solid ${theme.color}88`
@@ -299,14 +299,14 @@ export default function ThemeSwitcher({
                   position: "relative",
                 }}>
                 <span style={{
-                  fontSize: 20, lineHeight: 1, color: theme.color,
+                  fontSize: isMobile ? 20 : 24, lineHeight: 1, color: theme.color,
                   opacity: isActive ? 1 : isVisited ? 0.7 : 0.5,
                   transition: "opacity 0.2s",
                 }}>
                   {theme.icon}
                 </span>
                 <span style={{
-                  fontSize: 8, fontWeight: 500, letterSpacing: "0.03em",
+                  fontSize: isMobile ? 8 : 10, fontWeight: 500, letterSpacing: "0.03em",
                   color: isActive ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.35)",
                   textAlign: "center", lineHeight: 1.2,
                   overflow: "hidden", textOverflow: "ellipsis",
