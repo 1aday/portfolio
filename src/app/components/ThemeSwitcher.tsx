@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  useRef,
-  useEffect,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 
 /* ─── Theme registry with icons ─── */
 const themes = [
@@ -114,9 +108,6 @@ const themes = [
   { name: "Pavilion", path: "/pavilion", color: "#FF4500", icon: "⌖" },
 ];
 
-const ITEM_SIZE = 44;
-const ITEM_GAP = 8;
-const ITEM_STEP = ITEM_SIZE + ITEM_GAP;
 const AUTO_NAV_DELAY = 1200;
 
 export default function ThemeSwitcher({
@@ -145,109 +136,51 @@ export default function ThemeSwitcher({
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  /* ─── Mobile carousel state ─── */
-  const stripRef = useRef<HTMLDivElement>(null);
-  const [focusedIdx, setFocusedIdx] = useState(currentIndex >= 0 ? currentIndex : 0);
+  /* ─── Rolodex arc state ─── */
+  const [scrollPos, setScrollPos] = useState(0);
+  const scrollRef = useRef(0);
+  const touchRef = useRef({ startX: 0, startY: 0, startTime: 0, lastX: 0, lastY: 0 });
+  const velocityRef = useRef(0);
+  const lastMoveRef = useRef(0);
+  const animRef = useRef(0);
   const autoNavTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const countdownRef = useRef(0);
   const countdownAnimRef = useRef(0);
-  const isScrolling = useRef(false);
-  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Scroll to current theme when strip opens
+  // Init scroll to current theme when opening
   useEffect(() => {
-    if (isOpen && isMobile && stripRef.current) {
-      const idx = currentIndex >= 0 ? currentIndex : 0;
-      const containerWidth = stripRef.current.clientWidth;
-      const scrollTarget = idx * ITEM_STEP - containerWidth / 2 + ITEM_SIZE / 2;
-      stripRef.current.scrollTo({ left: scrollTarget, behavior: "instant" });
-      setFocusedIdx(idx);
+    if (isOpen && isMobile) {
+      const idx = themes.findIndex((t) => t.path === current);
+      const pos = idx >= 0 ? idx : 0;
+      scrollRef.current = pos;
+      setScrollPos(pos);
+      velocityRef.current = 0;
+      cancelAutoNav();
     }
-  }, [isOpen, isMobile, currentIndex]);
+  }, [isOpen, isMobile, current]);
 
-  // Clear timers on unmount
+  // Lock body scroll when mobile overlay is open
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [isOpen, isMobile]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (autoNavTimer.current) clearTimeout(autoNavTimer.current);
-      if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
+      cancelAnimationFrame(animRef.current);
       cancelAnimationFrame(countdownAnimRef.current);
+      if (autoNavTimer.current) clearTimeout(autoNavTimer.current);
     };
   }, []);
-
-  // Cancel auto-nav countdown
-  const cancelAutoNav = useCallback(() => {
-    if (autoNavTimer.current) {
-      clearTimeout(autoNavTimer.current);
-      autoNavTimer.current = null;
-    }
-    cancelAnimationFrame(countdownAnimRef.current);
-    countdownRef.current = 0;
-    setCountdown(0);
-  }, []);
-
-  // Start auto-nav countdown for focused theme
-  const startAutoNav = useCallback(
-    (idx: number) => {
-      cancelAutoNav();
-      const theme = themes[idx];
-      if (!theme || theme.path === current) return;
-
-      const startTime = performance.now();
-      const animate = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / AUTO_NAV_DELAY, 1);
-        countdownRef.current = progress;
-        setCountdown(progress);
-        if (progress < 1) {
-          countdownAnimRef.current = requestAnimationFrame(animate);
-        }
-      };
-      countdownAnimRef.current = requestAnimationFrame(animate);
-
-      autoNavTimer.current = setTimeout(() => {
-        router.push(theme.path);
-        setIsOpen(false);
-        countdownRef.current = 0;
-        setCountdown(0);
-      }, AUTO_NAV_DELAY);
-    },
-    [cancelAutoNav, current, router]
-  );
-
-  // Handle scroll to determine focused item
-  const handleStripScroll = useCallback(() => {
-    if (!stripRef.current) return;
-    isScrolling.current = true;
-    cancelAutoNav();
-
-    const scrollLeft = stripRef.current.scrollLeft;
-    const containerWidth = stripRef.current.clientWidth;
-    const centerScroll = scrollLeft + containerWidth / 2;
-    const idx = Math.round((centerScroll - ITEM_SIZE / 2) / ITEM_STEP);
-    const clampedIdx = Math.max(0, Math.min(idx, themes.length - 1));
-    setFocusedIdx(clampedIdx);
-
-    // Detect scroll end
-    if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
-    scrollEndTimer.current = setTimeout(() => {
-      isScrolling.current = false;
-      // Snap to nearest item
-      if (stripRef.current) {
-        const snapTarget = clampedIdx * ITEM_STEP - containerWidth / 2 + ITEM_SIZE / 2;
-        stripRef.current.scrollTo({ left: snapTarget, behavior: "smooth" });
-      }
-      startAutoNav(clampedIdx);
-    }, 120);
-  }, [cancelAutoNav, startAutoNav]);
 
   // Close on outside click (desktop only)
   useEffect(() => {
     if (!isOpen || isMobile) return;
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setIsOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -256,88 +189,120 @@ export default function ThemeSwitcher({
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        cancelAutoNav();
-        setIsOpen(false);
-      }
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setIsOpen(false); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, cancelAutoNav]);
+  }, [isOpen]);
 
   // Scroll active theme into view when desktop panel opens
   useEffect(() => {
     if (!isOpen || !listRef.current || isMobile) return;
     const active = listRef.current.querySelector<HTMLElement>("[data-active]");
-    if (active) {
-      requestAnimationFrame(() => {
-        active.scrollIntoView({ block: "center", behavior: "instant" });
-      });
-    }
+    if (active) requestAnimationFrame(() => active.scrollIntoView({ block: "center", behavior: "instant" }));
   }, [isOpen, isMobile]);
 
-  // Lock body scroll when mobile strip is open
-  useEffect(() => {
-    if (isOpen && isMobile) {
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = "";
-      };
-    }
-  }, [isOpen, isMobile]);
+  /* ─── Auto-nav countdown ─── */
+  const cancelAutoNav = useCallback(() => {
+    if (autoNavTimer.current) { clearTimeout(autoNavTimer.current); autoNavTimer.current = null; }
+    cancelAnimationFrame(countdownAnimRef.current);
+    setCountdown(0);
+  }, []);
 
-  const toggle = useCallback(() => {
+  const startAutoNav = useCallback((idx: number) => {
     cancelAutoNav();
-    setIsOpen((o) => !o);
+    const N = themes.length;
+    const themeIdx = ((idx % N) + N) % N;
+    const theme = themes[themeIdx];
+    if (!theme || theme.path === current) return;
+
+    const startTime = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min((now - startTime) / AUTO_NAV_DELAY, 1);
+      setCountdown(progress);
+      if (progress < 1) countdownAnimRef.current = requestAnimationFrame(tick);
+    };
+    countdownAnimRef.current = requestAnimationFrame(tick);
+
+    autoNavTimer.current = setTimeout(() => {
+      router.push(theme.path);
+      setIsOpen(false);
+      setCountdown(0);
+    }, AUTO_NAV_DELAY);
+  }, [cancelAutoNav, current, router]);
+
+  /* ─── Snap animation with cubic ease-out ─── */
+  const snapTo = useCallback((target: number) => {
+    cancelAnimationFrame(animRef.current);
+    const start = scrollRef.current;
+    const startTime = performance.now();
+    const duration = 400;
+    const animate = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const val = start + (target - start) * eased;
+      scrollRef.current = val;
+      setScrollPos(val);
+      if (t < 1) animRef.current = requestAnimationFrame(animate);
+      else startAutoNav(target); // Start auto-nav after snap settles
+    };
+    animRef.current = requestAnimationFrame(animate);
+  }, [startAutoNav]);
+
+  /* ─── Touch handlers for rolodex arc ─── */
+  const ANGLE_STEP = 26;
+  const DRAG_SENSITIVITY = 0.35;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    cancelAnimationFrame(animRef.current);
+    cancelAutoNav();
+    const t = e.touches[0];
+    touchRef.current = { startX: t.clientX, startY: t.clientY, startTime: Date.now(), lastX: t.clientX, lastY: t.clientY };
+    velocityRef.current = 0;
+    lastMoveRef.current = performance.now();
   }, [cancelAutoNav]);
 
-  const focusedTheme = themes[focusedIdx] || themes[0];
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    const dx = t.clientX - touchRef.current.lastX;
+    const now = performance.now();
+    const dt = now - lastMoveRef.current;
+    if (dt > 0) {
+      const delta = -dx * DRAG_SENSITIVITY / ANGLE_STEP;
+      velocityRef.current = (delta / dt) * 1000;
+      scrollRef.current += delta;
+      setScrollPos(scrollRef.current);
+    }
+    lastMoveRef.current = now;
+    touchRef.current.lastX = t.clientX;
+    touchRef.current.lastY = t.clientY;
+  }, []);
 
-  /* ─── Countdown ring SVG ─── */
-  const CountdownRing = useMemo(() => {
-    if (countdown <= 0) return null;
-    const r = 24;
-    const circ = 2 * Math.PI * r;
-    const offset = circ * (1 - countdown);
-    return (
-      <svg
-        width="54"
-        height="54"
-        viewBox="0 0 54 54"
-        style={{
-          position: "absolute",
-          top: -5,
-          left: -5,
-          pointerEvents: "none",
-        }}
-      >
-        <circle
-          cx="27"
-          cy="27"
-          r={r}
-          fill="none"
-          stroke={focusedTheme.color}
-          strokeWidth="2.5"
-          strokeDasharray={circ}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          transform="rotate(-90 27 27)"
-          style={{ transition: "stroke 0.2s" }}
-        />
-      </svg>
-    );
-  }, [countdown, focusedTheme.color]);
+  const handleTouchEnd = useCallback(() => {
+    const totalDx = touchRef.current.lastX - touchRef.current.startX;
+    const totalDy = touchRef.current.lastY - touchRef.current.startY;
+    const elapsed = Date.now() - touchRef.current.startTime;
+
+    // Short tap → navigate immediately
+    if (Math.abs(totalDx) < 10 && Math.abs(totalDy) < 10 && elapsed < 300) {
+      const N = themes.length;
+      const idx = ((Math.round(scrollRef.current) % N) + N) % N;
+      router.push(themes[idx].path);
+      setIsOpen(false);
+      return;
+    }
+
+    // Momentum snap
+    const velocity = velocityRef.current;
+    const projected = scrollRef.current + velocity * 0.25;
+    snapTo(Math.round(projected));
+  }, [router, snapTo]);
+
+  const toggle = useCallback(() => { cancelAutoNav(); setIsOpen((o) => !o); }, [cancelAutoNav]);
 
   return (
-    <div
-      ref={panelRef}
-      className={`ts-wrap ${light ? "ts-light" : ""} ${isMobile ? "ts-wrap-mobile" : ""}`}
-    >
-      {/* ─── Desktop panel ─── */}
-      <div
-        className={`ts-panel ${isOpen && !isMobile ? "ts-panel-open" : ""}`}
-      >
+    <div ref={panelRef} className={`ts-wrap ${light ? "ts-light" : ""} ${isMobile ? "ts-wrap-mobile" : ""}`}>
+      {/* Desktop panel */}
+      <div className={`ts-panel ${isOpen && !isMobile ? "ts-panel-open" : ""}`}>
         <div className="ts-panel-header">
           <span className="ts-panel-title">Themes</span>
           <span className="ts-panel-count">{themes.length}</span>
@@ -346,249 +311,147 @@ export default function ThemeSwitcher({
           {themes.map((theme, i) => {
             const isActive = theme.path === current;
             return (
-              <Link
-                key={theme.path}
-                href={theme.path}
+              <Link key={theme.path} href={theme.path}
                 className={`ts-item ${isActive ? "ts-item-active" : ""}`}
                 data-active={isActive ? "" : undefined}
-                onClick={() => setIsOpen(false)}
-              >
-                <span className="ts-item-icon" style={{ color: theme.color }}>
-                  {theme.icon}
-                </span>
+                onClick={() => setIsOpen(false)}>
+                <span className="ts-item-icon" style={{ color: theme.color }}>{theme.icon}</span>
                 <span className="ts-item-name">{theme.name}</span>
-                <span className="ts-item-num">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                <span className="ts-item-num">{String(i + 1).padStart(2, "0")}</span>
               </Link>
             );
           })}
         </div>
       </div>
 
-      {/* ─── Mobile carousel strip ─── */}
-      {isMobile && isOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 200,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-            background: "rgba(0,0,0,0.85)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            animation: "mobileStripFadeIn 0.25s ease",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              cancelAutoNav();
-              setIsOpen(false);
-            }
-          }}
-        >
-          {/* Theme info */}
-          <div
-            style={{
-              textAlign: "center",
-              paddingBottom: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 28,
-                fontWeight: 600,
-                letterSpacing: "0.02em",
-                color: focusedTheme.color,
-                transition: "color 0.2s ease",
-                lineHeight: 1.2,
-              }}
-            >
-              {focusedTheme.name}
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: "rgba(255,255,255,0.35)",
-                letterSpacing: "0.08em",
-                marginTop: 4,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {focusedIdx + 1} / {themes.length}
+      {/* Mobile rolodex overlay */}
+      {isMobile && (() => {
+        const ARC_RADIUS = 140;
+        const VISIBLE_HALF = 4;
+        const N = themes.length;
+        const centerIdx = Math.round(scrollPos);
+        const fractional = scrollPos - centerIdx;
+        const focusedThemeIdx = ((centerIdx % N) + N) % N;
+        const focusedTheme = themes[focusedThemeIdx];
+
+        const arcCards: { key: string; theme: typeof themes[0]; x: number; y: number; scale: number; opacity: number; rot: number; z: number; focused: boolean }[] = [];
+        for (let i = -VISIBLE_HALF; i <= VISIBLE_HALF; i++) {
+          const rawIdx = centerIdx + i;
+          const themeIdx = ((rawIdx % N) + N) % N;
+          const theme = themes[themeIdx];
+          const arcOffset = i - fractional;
+          const angleDeg = arcOffset * ANGLE_STEP;
+          const angleRad = (angleDeg * Math.PI) / 180;
+          const x = ARC_RADIUS * Math.sin(angleRad);
+          const y = -ARC_RADIUS * Math.cos(angleRad);
+          const dist = Math.min(Math.abs(arcOffset) / VISIBLE_HALF, 1);
+          arcCards.push({
+            key: `${rawIdx}`,
+            theme,
+            x, y,
+            scale: 1 - dist * 0.45,
+            opacity: Math.max(1 - dist * 0.8, 0),
+            rot: angleDeg * 0.3,
+            z: VISIBLE_HALF + 1 - Math.round(Math.abs(arcOffset)),
+            focused: Math.abs(arcOffset) < 0.4,
+          });
+        }
+
+        // Countdown ring for auto-nav
+        const ringR = 30;
+        const ringCirc = 2 * Math.PI * ringR;
+        const ringOffset = ringCirc * (1 - countdown);
+
+        return (
+          <div className={`ts-rolodex-overlay ${isOpen ? "ts-rolodex-open" : ""}`}>
+            {/* Close */}
+            <button className="ts-rolodex-close" onClick={() => { cancelAutoNav(); setIsOpen(false); }} aria-label="Close">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M14 4L4 14M4 4l10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {/* Theme info above arc */}
+            <div className="ts-rolodex-info">
+              <span className="ts-rolodex-name" style={{ color: focusedTheme.color }}>
+                {focusedTheme.name}
+              </span>
+              <span className="ts-rolodex-num">
+                {focusedThemeIdx + 1} / {N}
+              </span>
               {focusedTheme.path === current && (
-                <span
-                  style={{
-                    marginLeft: 8,
-                    padding: "2px 6px",
-                    borderRadius: 4,
-                    background: "rgba(255,255,255,0.08)",
-                    fontSize: 9,
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                  }}
-                >
-                  CURRENT
+                <span className="ts-rolodex-badge">CURRENT</span>
+              )}
+              {countdown > 0 && focusedTheme.path !== current && (
+                <span style={{
+                  fontSize: 9, fontWeight: 600, letterSpacing: "0.1em",
+                  color: focusedTheme.color, marginTop: 4, opacity: 0.7,
+                }}>
+                  LOADING...
                 </span>
               )}
             </div>
-          </div>
 
-          {/* Scrollable strip */}
-          <div
-            ref={stripRef}
-            onScroll={handleStripScroll}
-            style={{
-              display: "flex",
-              gap: ITEM_GAP,
-              overflowX: "auto",
-              overflowY: "hidden",
-              paddingBottom: 20,
-              paddingTop: 12,
-              scrollbarWidth: "none",
-              WebkitOverflowScrolling: "touch",
-              maskImage:
-                "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-              WebkitMaskImage:
-                "linear-gradient(to right, transparent, black 15%, black 85%, transparent)",
-            }}
-          >
-            {/* Spacer for centering first item */}
-            <div style={{ minWidth: "calc(50vw - 22px)", flexShrink: 0 }} />
-            {themes.map((theme, i) => {
-              const isFocused = i === focusedIdx;
-              const isCurrent = theme.path === current;
-              const dist = Math.abs(i - focusedIdx);
-              const scale = isFocused ? 1 : Math.max(0.65, 1 - dist * 0.08);
-              const opacity = isFocused ? 1 : Math.max(0.3, 1 - dist * 0.15);
-
-              return (
-                <div
-                  key={theme.path}
-                  style={{
-                    width: ITEM_SIZE,
-                    height: ITEM_SIZE,
-                    flexShrink: 0,
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "50%",
-                    border: `2px solid ${
-                      isFocused
-                        ? `${theme.color}cc`
-                        : isCurrent
-                          ? `${theme.color}66`
-                          : "rgba(255,255,255,0.08)"
-                    }`,
-                    background: isFocused
-                      ? `${theme.color}15`
-                      : "rgba(15,15,15,0.9)",
-                    transform: `scale(${scale})`,
-                    opacity,
-                    transition:
-                      "transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease",
-                    boxShadow: isFocused
-                      ? `0 0 20px ${theme.color}30, 0 0 40px ${theme.color}10`
-                      : "none",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => {
-                    cancelAutoNav();
-                    router.push(theme.path);
-                    setIsOpen(false);
-                  }}
-                >
-                  {isFocused && CountdownRing}
-                  <span
+            {/* Touch area + arc */}
+            <div className="ts-rolodex-touch"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}>
+              <div className="ts-rolodex-arc">
+                {arcCards.map((card) => (
+                  <div key={card.key}
+                    className={`ts-rolodex-card ${card.focused ? "ts-rolodex-card-focused" : ""}`}
                     style={{
-                      fontSize: isFocused ? 20 : 16,
-                      color: theme.color,
-                      lineHeight: 1,
-                      transition: "font-size 0.2s ease",
-                    }}
-                  >
-                    {theme.icon}
-                  </span>
-                  {isCurrent && !isFocused && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: -2,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        width: 4,
-                        height: 4,
-                        borderRadius: "50%",
-                        background: theme.color,
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-            {/* Spacer for centering last item */}
-            <div style={{ minWidth: "calc(50vw - 22px)", flexShrink: 0 }} />
-          </div>
+                      transform: `translate(${card.x}px, ${card.y}px) translate(-50%, -50%) scale(${card.scale}) rotate(${card.rot}deg)`,
+                      opacity: card.opacity,
+                      zIndex: card.z,
+                    }}>
+                    <div className="ts-rolodex-icon" style={{
+                      borderColor: `${card.theme.color}${card.focused ? "bb" : "33"}`,
+                      boxShadow: card.focused
+                        ? `0 0 30px ${card.theme.color}40, 0 0 60px ${card.theme.color}18`
+                        : "none",
+                    }}>
+                      {/* Countdown ring on focused icon */}
+                      {card.focused && countdown > 0 && (
+                        <svg width="72" height="72" viewBox="0 0 72 72"
+                          style={{ position: "absolute", top: -8, left: -8, pointerEvents: "none" }}>
+                          <circle cx="36" cy="36" r={ringR} fill="none"
+                            stroke={card.theme.color} strokeWidth="2"
+                            strokeDasharray={ringCirc} strokeDashoffset={ringOffset}
+                            strokeLinecap="round" transform="rotate(-90 36 36)"
+                            style={{ transition: "stroke 0.2s" }} />
+                        </svg>
+                      )}
+                      <span style={{ color: card.theme.color }}>{card.theme.icon}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* Close hint */}
-          <div
-            style={{
-              textAlign: "center",
-              paddingBottom: 28,
-              paddingTop: 4,
-              fontSize: 10,
-              color: "rgba(255,255,255,0.2)",
-              letterSpacing: "0.06em",
-            }}
-          >
-            {focusedTheme.path !== current
-              ? "auto-loading..."
-              : "tap anywhere to close"}
+            {/* Hint */}
+            <div className="ts-rolodex-hint">
+              <span>{countdown > 0 ? "auto-loading theme..." : "swipe to browse \u2022 tap to visit"}</span>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* ─── Trigger button ─── */}
+      {/* Trigger button */}
       <button className="ts-trigger" onClick={toggle} aria-label="Switch theme">
-        <span
-          className="ts-trigger-icon-char"
-          style={{ color: currentTheme.color }}
-        >
+        <span className="ts-trigger-icon-char" style={{ color: currentTheme.color }}>
           {currentTheme.icon}
         </span>
         <span className="ts-trigger-name">{currentTheme.name}</span>
         <span className="ts-trigger-badge">
           {currentIndex + 1}/{themes.length}
         </span>
-        <svg
-          className={`ts-trigger-chevron ${isOpen ? "ts-chevron-open" : ""}`}
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-        >
-          <path
-            d="M2 6.5L5 3.5L8 6.5"
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <svg className={`ts-trigger-chevron ${isOpen ? "ts-chevron-open" : ""}`}
+          width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-
-      {/* Mobile strip animation */}
-      <style>{`
-        @keyframes mobileStripFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        [style*="scrollbar-width"]::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 }
