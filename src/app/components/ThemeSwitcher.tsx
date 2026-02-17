@@ -422,25 +422,28 @@ export default function ThemeSwitcher({
               </svg>
             </button>
 
-            {/* Copy — small matching circle */}
+            {/* Copy — pill label */}
             <button onClick={copyStyle} aria-label="Copy style" style={{
-              width: 32, height: 32, borderRadius: "50%",
-              border: `1px solid ${copied ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.06)"}`,
-              background: copied ? "rgba(74,222,128,0.08)" : "rgba(10,10,10,0.6)",
+              height: 36, borderRadius: 18,
+              padding: "0 12px",
+              border: `1px solid ${copied ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.08)"}`,
+              background: copied ? "rgba(74,222,128,0.08)" : "rgba(10,10,10,0.7)",
               backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              display: "flex", alignItems: "center", gap: 5,
               cursor: "pointer",
-              color: copied ? "#4ADE80" : "rgba(255,255,255,0.25)",
-              marginLeft: 2,
+              color: copied ? "#4ADE80" : "rgba(255,255,255,0.4)",
+              fontSize: 9, fontWeight: 500, letterSpacing: "0.05em",
+              marginLeft: 4,
               transition: "all 0.2s",
             }}>
               {copied ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
               ) : (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
               )}
+              {copied ? "Copied" : "Copy"}
             </button>
           </>
         ) : (
@@ -471,17 +474,19 @@ export default function ThemeSwitcher({
               <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          {/* Desktop copy button */}
+          {/* Desktop copy — pill with label */}
           <button onClick={copyStyle} aria-label="Copy style" style={{
-            width: 32, height: 32, borderRadius: "50%",
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "8px 14px",
+            borderRadius: 12,
             border: `1px solid ${copied ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.08)"}`,
-            background: copied ? "rgba(74,222,128,0.08)" : "rgba(10,10,10,0.7)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
+            background: copied ? "rgba(74,222,128,0.08)" : "rgba(10,10,10,0.85)",
+            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
             cursor: "pointer",
-            color: copied ? "#4ADE80" : "rgba(255,255,255,0.3)",
+            color: copied ? "#4ADE80" : "rgba(255,255,255,0.45)",
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.05em",
             transition: "all 0.2s",
-            marginLeft: 6,
+            marginLeft: 8,
           }}>
             {copied ? (
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -490,6 +495,7 @@ export default function ThemeSwitcher({
                 <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
             )}
+            <span>{copied ? "Copied!" : "Copy Style"}</span>
           </button>
           </>
         )}
