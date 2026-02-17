@@ -467,7 +467,8 @@
   }
 }
 
-/* ─── Rolodex Half-Circle Arc ─── */
+/* ─── Rolodex (removed — replaced by carousel strip) ─── */
+/* Kept only non-rolodex styles below */
 .ts-rolodex-overlay {
   position: fixed;
   inset: 0;
