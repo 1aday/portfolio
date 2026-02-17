@@ -206,6 +206,31 @@ export default function ThemeSwitcher({
 
   const toggle = useCallback(() => { cancelAutoNav(); setIsOpen((o) => !o); }, [cancelAutoNav]);
 
+  /* ─── Prev/Next navigation ─── */
+  const goNext = useCallback(() => {
+    const nextIdx = (currentIndex + 1) % themes.length;
+    router.push(themes[nextIdx].path);
+  }, [currentIndex, router]);
+
+  const goPrev = useCallback(() => {
+    const prevIdx = (currentIndex - 1 + themes.length) % themes.length;
+    router.push(themes[prevIdx].path);
+  }, [currentIndex, router]);
+
+  /* ─── Swipe detection on mobile trigger area ─── */
+  const swipeRef = useRef({ startX: 0, startTime: 0 });
+  const handleSwipeStart = useCallback((e: React.TouchEvent) => {
+    swipeRef.current = { startX: e.touches[0].clientX, startTime: Date.now() };
+  }, []);
+  const handleSwipeEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
+    const elapsed = Date.now() - swipeRef.current.startTime;
+    if (elapsed < 500 && Math.abs(dx) > 40) {
+      if (dx < 0) goNext();
+      else goPrev();
+    }
+  }, [goNext, goPrev]);
+
   /* ─── Shared list content ─── */
   const themeList = (
     <div ref={listRef} style={{
@@ -357,48 +382,97 @@ export default function ThemeSwitcher({
         {themeList}
       </div>
 
-      {/* Trigger */}
-      <button
-        onClick={toggle}
-        aria-label="Switch theme"
-        style={{
+      {/* Trigger area */}
+      {isMobile ? (
+        <div style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          padding: isMobile ? "0" : "8px 14px 8px 10px",
-          width: isMobile ? 48 : "auto",
-          height: isMobile ? 48 : "auto",
-          justifyContent: "center",
-          borderRadius: isMobile ? "50%" : 12,
-          border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
-          background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          color: light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.65)",
-          fontSize: 11,
-          fontWeight: 500,
-          letterSpacing: "0.05em",
-          cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-          transition: "all 0.25s ease",
-        }}
-      >
-        <span style={{ fontSize: isMobile ? 18 : 14, lineHeight: 1, color: currentTheme.color }}>
-          {currentTheme.icon}
-        </span>
-        {!isMobile && (
-          <>
-            <span style={{ lineHeight: 1 }}>{currentTheme.name}</span>
-            <span style={{ fontSize: 9, opacity: 0.35, fontVariantNumeric: "tabular-nums" }}>
-              {currentIndex + 1}/{themes.length}
-            </span>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
-              style={{ opacity: 0.4, transition: "transform 0.3s", transform: isOpen ? "rotate(180deg)" : "none" }}>
-              <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          gap: 6,
+        }}>
+          {/* Prev */}
+          <button onClick={goPrev} aria-label="Previous theme" style={{
+            width: 32, height: 32, borderRadius: "50%",
+            border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
+            background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
+            transition: "all 0.2s",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M7.5 2.5L4.5 6L7.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-          </>
-        )}
-      </button>
+          </button>
+
+          {/* Center trigger — swipeable */}
+          <button
+            onClick={toggle}
+            onTouchStart={handleSwipeStart}
+            onTouchEnd={handleSwipeEnd}
+            aria-label="Switch theme"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              width: 48, height: 48, borderRadius: "50%",
+              border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
+              background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+              transition: "all 0.25s ease",
+              touchAction: "pan-y",
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1, color: currentTheme.color }}>
+              {currentTheme.icon}
+            </span>
+          </button>
+
+          {/* Next */}
+          <button onClick={goNext} aria-label="Next theme" style={{
+            width: 32, height: 32, borderRadius: "50%",
+            border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
+            background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
+            transition: "all 0.2s",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={toggle}
+          aria-label="Switch theme"
+          style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "8px 14px 8px 10px",
+            borderRadius: 12,
+            border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
+            background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
+            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+            color: light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.65)",
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.05em",
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+            transition: "all 0.25s ease",
+          }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1, color: currentTheme.color }}>
+            {currentTheme.icon}
+          </span>
+          <span style={{ lineHeight: 1 }}>{currentTheme.name}</span>
+          <span style={{ fontSize: 9, opacity: 0.35, fontVariantNumeric: "tabular-nums" }}>
+            {currentIndex + 1}/{themes.length}
+          </span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+            style={{ opacity: 0.4, transition: "transform 0.3s", transform: isOpen ? "rotate(180deg)" : "none" }}>
+            <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
