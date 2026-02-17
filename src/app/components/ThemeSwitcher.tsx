@@ -391,7 +391,7 @@ export default function ThemeSwitcher({
         }}>
           {/* Prev */}
           <button onClick={goPrev} aria-label="Previous theme" style={{
-            width: 32, height: 32, borderRadius: "50%",
+            width: 42, height: 42, borderRadius: "50%",
             border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
             background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
@@ -399,8 +399,8 @@ export default function ThemeSwitcher({
             cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
             transition: "all 0.2s",
           }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M7.5 2.5L4.5 6L7.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+              <path d="M7.5 2.5L4.5 6L7.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
@@ -412,7 +412,7 @@ export default function ThemeSwitcher({
             aria-label="Switch theme"
             style={{
               display: "flex", alignItems: "center", justifyContent: "center",
-              width: 48, height: 48, borderRadius: "50%",
+              width: 56, height: 56, borderRadius: "50%",
               border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
               background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
               backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
@@ -422,14 +422,14 @@ export default function ThemeSwitcher({
               touchAction: "pan-y",
             }}
           >
-            <span style={{ fontSize: 18, lineHeight: 1, color: currentTheme.color }}>
+            <span style={{ fontSize: 22, lineHeight: 1, color: currentTheme.color }}>
               {currentTheme.icon}
             </span>
           </button>
 
           {/* Next */}
           <button onClick={goNext} aria-label="Next theme" style={{
-            width: 32, height: 32, borderRadius: "50%",
+            width: 42, height: 42, borderRadius: "50%",
             border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
             background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
@@ -437,8 +437,8 @@ export default function ThemeSwitcher({
             cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
             transition: "all 0.2s",
           }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
         </div>
