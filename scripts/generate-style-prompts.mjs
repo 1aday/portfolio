@@ -21,13 +21,65 @@ const FONT_MAP = {
 };
 
 function extractAll(code) {
-  // Colors
+  // Colors from const C = {...}
   const cMatch = code.match(/const\s+C\s*=\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/s);
   const colors = {};
   if (cMatch) {
     const re = /(\w+)\s*:\s*["']([^"']+)["']/g;
     let m;
     while ((m = re.exec(cMatch[1])) !== null) colors[m[1]] = m[2];
+  }
+
+  // Also extract colors from Tailwind classes: bg-[#xxx], text-[#xxx], border-[#xxx]
+  if (Object.keys(colors).length < 3) {
+    const twColors = new Map();
+    const twRe = /(bg|text|border)-\[(#[0-9A-Fa-f]{3,8})\]/g;
+    let tm;
+    while ((tm = twRe.exec(code)) !== null) twColors.set(tm[2], tm[1]);
+    // Classify by usage
+    const bgColors = [...twColors.entries()].filter(([,t]) => t === "bg").map(([c]) => c);
+    const textColors = [...twColors.entries()].filter(([,t]) => t === "text").map(([c]) => c);
+    // Lightest bg = main background, darkest text = main text
+    if (bgColors.length > 0 && !colors.bg) {
+      const sorted = bgColors.sort((a, b) => parseInt(b.slice(1), 16) - parseInt(a.slice(1), 16));
+      colors.bg = sorted[0]; // lightest
+      if (sorted.length > 1) colors.card = sorted[1];
+    }
+    if (textColors.length > 0 && !colors.text) {
+      // Find the most common text color, then darkest
+      const counts = {};
+      textColors.forEach(c => counts[c] = (counts[c] || 0) + 1);
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      if (sorted[0]) colors.text = sorted[0][0];
+      // Find ALL saturated accent colors from text, bg, and border
+      const allTwColors = [...new Set([...bgColors, ...textColors])];
+      const accents = [];
+      for (const c of allTwColors) {
+        if (c === colors.bg || c === colors.text || c === colors.card) continue;
+        if (c.length < 7) continue;
+        const r = parseInt(c.slice(1,3), 16), g = parseInt(c.slice(3,5), 16), b = parseInt(c.slice(5,7), 16);
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const sat = max > 0 ? (max - min) / max : 0;
+        if (sat > 0.25) accents.push(c);
+      }
+      if (accents.length > 0) colors.accent = accents[0];
+      if (accents.length > 1) colors.accent2 = accents[1];
+      // Also check hover/border colors for accents
+      const borderRe = /(?:border|hover:border)-\[(#[0-9A-Fa-f]{6})\]/g;
+      while ((tm = borderRe.exec(code)) !== null) {
+        const c = tm[1];
+        const r = parseInt(c.slice(1,3), 16), g = parseInt(c.slice(3,5), 16), b = parseInt(c.slice(5,7), 16);
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const sat = max > 0 ? (max - min) / max : 0;
+        if (sat > 0.3 && !colors.accent) colors.accent = c;
+      }
+    }
+    // Find muted text
+    const mutedCandidates = textColors.filter(c => {
+      const r = parseInt(c.slice(1,3), 16);
+      return r > 80 && r < 180;
+    });
+    if (mutedCandidates[0] && !colors.muted) colors.muted = mutedCandidates[0];
   }
 
   // Fonts
@@ -103,14 +155,25 @@ function extractAll(code) {
   const hasUppercaseLabels = code.includes("uppercase");
   const labelTracking = [...trackings].find(t => parseFloat(t) >= 0.15) || null;
 
+  // Hover effects extraction
+  const hoverEffects = [];
+  if (code.includes("hover:border")) hoverEffects.push("border color change on hover");
+  if (code.includes("hover:text-") || code.includes("hover:text-[")) hoverEffects.push("text color change on hover");
+  if (code.includes("hover:bg-") || code.includes("hover:bg-[")) hoverEffects.push("background change on hover");
+  if (code.includes("hover:scale") || code.includes("whileHover") && code.includes("scale")) hoverEffects.push("scale transform on hover");
+  if (code.includes("hover:translate") || code.includes("group-hover:translate")) hoverEffects.push("translate shift on hover");
+  if (code.includes("hover:opacity") || code.includes("group-hover:opacity")) hoverEffects.push("opacity change on hover");
+  if (code.includes("hover:shadow") || code.includes("hover:boxShadow")) hoverEffects.push("shadow on hover");
+  if (code.includes("transition-")) hoverEffects.push("CSS transitions");
+
   // Background mood
   const bg = colors.bg || colors.background || "";
-  const isDark = bg.startsWith("#0") || bg.startsWith("#1") || bg.startsWith("#2") || !bg;
+  const isDark = bg ? (bg.startsWith("#0") || bg.startsWith("#1") || bg.startsWith("#2")) : true;
 
   return {
     colors, fontList, heroSize, subSize, heroItalic, hasItalicSpans,
     heroWeight, heroLineHeight, trackings: [...trackings], maxWidth,
-    keyframes, effects, commentDesc, headingFont, bodyFont, monoFont,
+    keyframes, effects, hoverEffects, commentDesc, headingFont, bodyFont, monoFont,
     hasUppercaseLabels, labelTracking, isDark,
   };
 }
@@ -191,6 +254,13 @@ function buildPrompt(name, d) {
   if (d.keyframes.length > 0) {
     p += `## Animations\n`;
     p += d.keyframes.join(", ") + `\n\n`;
+  }
+
+  // Hover/Interaction
+  if (d.hoverEffects.length > 0) {
+    p += `## Hover & Interaction\n`;
+    for (const e of d.hoverEffects) p += `• ${e}\n`;
+    p += `\n`;
   }
 
   // Reproduction
