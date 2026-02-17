@@ -6,7 +6,6 @@ import { useRef, useEffect, useState, useCallback } from "react";
 
 /* ─── Theme registry ─── */
 const themes = [
-  { name: "Default", path: "/", color: "#FF8C42", icon: "◆" },
   { name: "Midnight", path: "/midnight", color: "#D4AF37", icon: "☽" },
   { name: "Terminal", path: "/terminal", color: "#00FF41", icon: "▸" },
   { name: "Paper", path: "/paper", color: "#E63946", icon: "◎" },
@@ -108,6 +107,8 @@ const themes = [
   { name: "Pavilion", path: "/pavilion", color: "#FF4500", icon: "⌖" },
 ];
 
+const VISITED_KEY = "portfolio-visited-themes";
+
 export default function ThemeSwitcher({
   current,
   variant = "dark",
@@ -118,7 +119,6 @@ export default function ThemeSwitcher({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
   const light = variant === "light";
 
   const currentTheme = themes.find((t) => t.path === current) || themes[0];
@@ -134,90 +134,35 @@ export default function ThemeSwitcher({
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  /* ─── Auto-nav state ─── */
-  const autoNavTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [highlightIdx, setHighlightIdx] = useState(-1);
-  const [countdown, setCountdown] = useState(0);
-  const countdownAnimRef = useRef(0);
-
-  const cancelAutoNav = useCallback(() => {
-    if (autoNavTimer.current) { clearTimeout(autoNavTimer.current); autoNavTimer.current = null; }
-    cancelAnimationFrame(countdownAnimRef.current);
-    setCountdown(0);
+  /* ─── Visited themes tracking ─── */
+  const [visited, setVisited] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(VISITED_KEY);
+      if (stored) setVisited(new Set(JSON.parse(stored)));
+    } catch {}
   }, []);
-
-  const startAutoNav = useCallback((idx: number) => {
-    cancelAutoNav();
-    const theme = themes[idx];
-    if (!theme || theme.path === current) return;
-    setHighlightIdx(idx);
-
-    const startTime = performance.now();
-    const tick = (now: number) => {
-      const p = Math.min((now - startTime) / 1200, 1);
-      setCountdown(p);
-      if (p < 1) countdownAnimRef.current = requestAnimationFrame(tick);
-    };
-    countdownAnimRef.current = requestAnimationFrame(tick);
-
-    autoNavTimer.current = setTimeout(() => {
-      router.push(theme.path);
-      setIsOpen(false);
-      setCountdown(0);
-      setHighlightIdx(-1);
-    }, 1200);
-  }, [cancelAutoNav, current, router]);
-
-  // Close on outside click
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        cancelAutoNav();
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [isOpen, cancelAutoNav]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { cancelAutoNav(); setIsOpen(false); }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [isOpen, cancelAutoNav]);
-
-  // Scroll active into view
-  useEffect(() => {
-    if (!isOpen || !listRef.current) return;
-    const active = listRef.current.querySelector<HTMLElement>("[data-active]");
-    if (active) requestAnimationFrame(() => active.scrollIntoView({ block: "center", behavior: "instant" }));
-  }, [isOpen]);
-
-  // Cleanup
-  useEffect(() => () => {
-    cancelAnimationFrame(countdownAnimRef.current);
-    if (autoNavTimer.current) clearTimeout(autoNavTimer.current);
-  }, []);
-
-  const toggle = useCallback(() => { cancelAutoNav(); setIsOpen((o) => !o); }, [cancelAutoNav]);
+    if (!current) return;
+    setVisited((prev) => {
+      const next = new Set(prev);
+      next.add(current);
+      try { localStorage.setItem(VISITED_KEY, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, [current]);
 
   /* ─── Prev/Next navigation ─── */
   const goNext = useCallback(() => {
     const nextIdx = (currentIndex + 1) % themes.length;
     router.push(themes[nextIdx].path);
   }, [currentIndex, router]);
-
   const goPrev = useCallback(() => {
     const prevIdx = (currentIndex - 1 + themes.length) % themes.length;
     router.push(themes[prevIdx].path);
   }, [currentIndex, router]);
 
-  /* ─── Swipe detection on mobile trigger area ─── */
+  /* ─── Swipe on trigger ─── */
   const swipeRef = useRef({ startX: 0, startTime: 0 });
   const handleSwipeStart = useCallback((e: React.TouchEvent) => {
     swipeRef.current = { startX: e.touches[0].clientX, startTime: Date.now() };
@@ -226,253 +171,257 @@ export default function ThemeSwitcher({
     const dx = e.changedTouches[0].clientX - swipeRef.current.startX;
     const elapsed = Date.now() - swipeRef.current.startTime;
     if (elapsed < 500 && Math.abs(dx) > 40) {
-      if (dx < 0) goNext();
-      else goPrev();
+      if (dx < 0) goNext(); else goPrev();
     }
   }, [goNext, goPrev]);
 
-  /* ─── Shared list content ─── */
-  const themeList = (
-    <div ref={listRef} style={{
-      maxHeight: isMobile ? "50vh" : 380,
-      overflowY: "auto",
-      padding: "0 6px 6px",
-      scrollbarWidth: "thin",
-      scrollbarColor: "rgba(255,255,255,0.08) transparent",
-    }}>
-      {themes.map((theme, i) => {
-        const isActive = theme.path === current;
-        const isHighlighted = i === highlightIdx;
-        const ringProgress = isHighlighted ? countdown : 0;
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isOpen]);
 
-        return (
-          <Link
-            key={theme.path}
-            href={theme.path}
-            data-active={isActive ? "" : undefined}
-            onClick={() => { cancelAutoNav(); setIsOpen(false); }}
-            onPointerEnter={() => { if (!isActive) startAutoNav(i); }}
-            onPointerLeave={() => { if (i === highlightIdx) cancelAutoNav(); }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "6px 8px",
-              borderRadius: 8,
-              textDecoration: "none",
-              background: isActive
-                ? light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"
-                : isHighlighted
-                  ? light ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)"
-                  : "transparent",
-              transition: "background 0.15s",
-              cursor: "pointer",
-              position: "relative",
-            }}
-          >
-            {/* Icon with countdown ring */}
-            <span style={{
-              position: "relative",
-              width: 22,
-              height: 22,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-              color: theme.color,
-              flexShrink: 0,
-            }}>
-              {ringProgress > 0 && (
-                <svg width="22" height="22" viewBox="0 0 22 22"
-                  style={{ position: "absolute", inset: 0 }}>
-                  <circle cx="11" cy="11" r="9.5" fill="none"
-                    stroke={theme.color} strokeWidth="1.5"
-                    strokeDasharray={2 * Math.PI * 9.5}
-                    strokeDashoffset={2 * Math.PI * 9.5 * (1 - ringProgress)}
-                    strokeLinecap="round" transform="rotate(-90 11 11)"
-                    opacity={0.6} />
-                </svg>
-              )}
-              {theme.icon}
-            </span>
-            <span style={{
-              flex: 1,
-              fontSize: 11,
-              fontWeight: isActive ? 600 : 500,
-              letterSpacing: "0.04em",
-              color: isActive
-                ? light ? "#1a1a1a" : "#fff"
-                : light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.6)",
-              transition: "color 0.15s",
-            }}>
-              {theme.name}
-            </span>
-            <span style={{
-              fontSize: 9,
-              fontVariantNumeric: "tabular-nums",
-              color: light ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.15)",
-              flexShrink: 0,
-            }}>
-              {String(i + 1).padStart(2, "0")}
-            </span>
-          </Link>
-        );
-      })}
-    </div>
-  );
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setIsOpen(false); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen]);
+
+  // Lock scroll when drawer open on mobile
+  useEffect(() => {
+    if (isOpen && isMobile) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [isOpen, isMobile]);
+
+  const toggle = useCallback(() => setIsOpen((o) => !o), []);
+
+  const visitedCount = visited.size;
 
   return (
     <div ref={panelRef} style={{
       position: "fixed",
-      bottom: isMobile ? "1.25rem" : "1.5rem",
-      right: isMobile ? "auto" : "1.5rem",
-      left: isMobile ? "50%" : "auto",
-      transform: isMobile ? "translateX(-50%)" : "none",
+      bottom: 0,
+      left: 0,
+      right: 0,
       zIndex: 100,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: isMobile ? "center" : "flex-end",
-      gap: 8,
+      pointerEvents: "none",
     }}>
-      {/* Panel */}
+      {/* ─── Drawer ─── */}
       <div style={{
-        background: light ? "rgba(255,255,255,0.96)" : "rgba(10,10,10,0.94)",
+        position: "absolute",
+        bottom: isMobile ? 76 : 72,
+        left: isMobile ? 8 : "auto",
+        right: isMobile ? 8 : 24,
+        maxWidth: isMobile ? "none" : 480,
+        maxHeight: isOpen ? "70vh" : 0,
+        opacity: isOpen ? 1 : 0,
+        transform: isOpen ? "translateY(0)" : "translateY(16px)",
+        transition: "all 0.3s cubic-bezier(0.23,1,0.32,1)",
+        overflow: "hidden",
+        borderRadius: 16,
+        background: "rgba(10,10,10,0.95)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
-        border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)"}`,
-        borderRadius: 14,
-        width: isMobile ? "min(280px, 85vw)" : 220,
-        boxShadow: light
-          ? "0 20px 60px rgba(0,0,0,0.1)"
-          : "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset",
-        opacity: isOpen ? 1 : 0,
-        transform: isOpen ? "translateY(0) scale(1)" : "translateY(8px) scale(0.96)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset",
         pointerEvents: isOpen ? "auto" : "none",
-        transition: "opacity 0.2s ease, transform 0.25s cubic-bezier(0.23,1,0.32,1)",
-        overflow: "hidden",
       }}>
         {/* Header */}
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 14px 8px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 16px 8px",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}>
-          <span style={{
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
-          }}>
-            Themes
-          </span>
-          <span style={{
-            fontSize: 10,
-            fontWeight: 500,
-            color: light ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)",
-            background: light ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)",
-            padding: "2px 6px",
-            borderRadius: 6,
-            fontVariantNumeric: "tabular-nums",
-          }}>
-            {themes.length}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.12em",
+              textTransform: "uppercase", color: "rgba(255,255,255,0.35)",
+            }}>Themes</span>
+            <span style={{
+              fontSize: 9, color: "rgba(255,255,255,0.2)",
+              background: "rgba(255,255,255,0.06)",
+              padding: "2px 6px", borderRadius: 4,
+            }}>{themes.length}</span>
+          </div>
+          {visitedCount > 0 && (
+            <span style={{
+              fontSize: 9, color: "rgba(255,255,255,0.25)",
+              letterSpacing: "0.05em",
+            }}>
+              {visitedCount} visited
+            </span>
+          )}
         </div>
-        {themeList}
+
+        {/* Grid */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(64px, 1fr))" : "repeat(auto-fill, minmax(72px, 1fr))",
+          gap: 6,
+          padding: "10px 10px 14px",
+          overflowY: "auto",
+          maxHeight: "calc(70vh - 50px)",
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255,255,255,0.08) transparent",
+        }}>
+          {themes.map((theme) => {
+            const isActive = theme.path === current;
+            const isVisited = visited.has(theme.path);
+
+            return (
+              <Link key={theme.path} href={theme.path}
+                onClick={() => setIsOpen(false)}
+                style={{
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  gap: 4,
+                  padding: "10px 4px 8px",
+                  borderRadius: 10,
+                  border: isActive
+                    ? `1.5px solid ${theme.color}88`
+                    : "1px solid rgba(255,255,255,0.04)",
+                  background: isActive
+                    ? `${theme.color}15`
+                    : "transparent",
+                  textDecoration: "none",
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                }}>
+                <span style={{
+                  fontSize: 20, lineHeight: 1, color: theme.color,
+                  opacity: isActive ? 1 : isVisited ? 0.7 : 0.5,
+                  transition: "opacity 0.2s",
+                }}>
+                  {theme.icon}
+                </span>
+                <span style={{
+                  fontSize: 8, fontWeight: 500, letterSpacing: "0.03em",
+                  color: isActive ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.35)",
+                  textAlign: "center", lineHeight: 1.2,
+                  overflow: "hidden", textOverflow: "ellipsis",
+                  whiteSpace: "nowrap", maxWidth: "100%",
+                }}>
+                  {theme.name}
+                </span>
+                {/* Visited dot */}
+                {isVisited && !isActive && (
+                  <div style={{
+                    position: "absolute", top: 4, right: 4,
+                    width: 4, height: 4, borderRadius: "50%",
+                    background: theme.color, opacity: 0.4,
+                  }} />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Home link */}
+        <div style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "8px 12px",
+          textAlign: "center",
+        }}>
+          <Link href="/" onClick={() => setIsOpen(false)} style={{
+            fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+            color: "rgba(255,255,255,0.3)", textDecoration: "none",
+          }}>
+            ← All Themes
+          </Link>
+        </div>
       </div>
 
-      {/* Trigger area */}
-      {isMobile ? (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}>
-          {/* Prev */}
-          <button onClick={goPrev} aria-label="Previous theme" style={{
-            width: 42, height: 42, borderRadius: "50%",
-            border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
-            background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
-            transition: "all 0.2s",
-          }}>
-            <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
-              <path d="M7.5 2.5L4.5 6L7.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {/* Center trigger — swipeable */}
-          <button
-            onClick={toggle}
-            onTouchStart={handleSwipeStart}
-            onTouchEnd={handleSwipeEnd}
-            aria-label="Switch theme"
-            style={{
+      {/* ─── Bottom bar ─── */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: isMobile ? 6 : 0,
+        padding: isMobile ? "0 0 20px" : "0 24px 20px",
+        pointerEvents: "auto",
+      }}>
+        {/* Mobile: prev/next + center trigger */}
+        {isMobile ? (
+          <>
+            <button onClick={goPrev} aria-label="Previous" style={{
+              width: 42, height: 42, borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(10,10,10,0.6)",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              width: 56, height: 56, borderRadius: "50%",
-              border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
-              background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
-              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-              cursor: "pointer",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-              transition: "all 0.25s ease",
-              touchAction: "pan-y",
-            }}
-          >
-            <span style={{ fontSize: 22, lineHeight: 1, color: currentTheme.color }}>
-              {currentTheme.icon}
-            </span>
-          </button>
+              cursor: "pointer", color: "rgba(255,255,255,0.35)",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+                <path d="M7.5 2.5L4.5 6L7.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
 
-          {/* Next */}
-          <button onClick={goNext} aria-label="Next theme" style={{
-            width: 42, height: 42, borderRadius: "50%",
-            border: `1px solid ${light ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
-            background: light ? "rgba(255,255,255,0.7)" : "rgba(10,10,10,0.6)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: light ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.35)",
-            transition: "all 0.2s",
-          }}>
-            <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
-              <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={toggle}
-          aria-label="Switch theme"
-          style={{
+            <button onClick={toggle} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}
+              aria-label="Browse themes" style={{
+              width: 56, height: 56, borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(10,10,10,0.85)",
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+              touchAction: "pan-y",
+            }}>
+              <span style={{ fontSize: 22, lineHeight: 1, color: currentTheme.color }}>
+                {currentTheme.icon}
+              </span>
+            </button>
+
+            <button onClick={goNext} aria-label="Next" style={{
+              width: 42, height: 42, borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(10,10,10,0.6)",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", color: "rgba(255,255,255,0.35)",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 12 12" fill="none">
+                <path d="M4.5 2.5L7.5 6L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </>
+        ) : (
+          /* Desktop: pill trigger */
+          <button onClick={toggle} aria-label="Browse themes" style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "8px 14px 8px 10px",
             borderRadius: 12,
-            border: `1px solid ${light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)"}`,
-            background: light ? "rgba(255,255,255,0.9)" : "rgba(10,10,10,0.85)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(10,10,10,0.85)",
             backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-            color: light ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.65)",
+            color: "rgba(255,255,255,0.65)",
             fontSize: 11, fontWeight: 500, letterSpacing: "0.05em",
             cursor: "pointer",
             boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-            transition: "all 0.25s ease",
-          }}
-        >
-          <span style={{ fontSize: 14, lineHeight: 1, color: currentTheme.color }}>
-            {currentTheme.icon}
-          </span>
-          <span style={{ lineHeight: 1 }}>{currentTheme.name}</span>
-          <span style={{ fontSize: 9, opacity: 0.35, fontVariantNumeric: "tabular-nums" }}>
-            {currentIndex + 1}/{themes.length}
-          </span>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
-            style={{ opacity: 0.4, transition: "transform 0.3s", transform: isOpen ? "rotate(180deg)" : "none" }}>
-            <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      )}
+            marginLeft: "auto",
+          }}>
+            <span style={{ fontSize: 14, lineHeight: 1, color: currentTheme.color }}>
+              {currentTheme.icon}
+            </span>
+            <span style={{ lineHeight: 1 }}>{currentTheme.name}</span>
+            <span style={{ fontSize: 9, opacity: 0.35, fontVariantNumeric: "tabular-nums" }}>
+              {currentIndex + 1}/{themes.length}
+            </span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+              style={{ opacity: 0.4, transition: "transform 0.3s", transform: isOpen ? "rotate(180deg)" : "none" }}>
+              <path d="M2 6.5L5 3.5L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
