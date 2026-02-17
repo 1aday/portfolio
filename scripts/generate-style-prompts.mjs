@@ -12,16 +12,12 @@ const themes = readdirSync(THEMES_DIR).filter(d =>
 );
 
 function extractColors(code) {
-  // Match const C = { ... };
   const match = code.match(/const\s+C\s*=\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/s);
   if (!match) return {};
-  const block = match[1];
   const colors = {};
   const re = /(\w+)\s*:\s*["']([^"']+)["']/g;
   let m;
-  while ((m = re.exec(block)) !== null) {
-    colors[m[1]] = m[2];
-  }
+  while ((m = re.exec(match[1])) !== null) colors[m[1]] = m[2];
   return colors;
 }
 
@@ -29,171 +25,282 @@ function extractFonts(code) {
   const fonts = new Set();
   const re = /var\(--font-([a-z-]+)\)/g;
   let m;
-  while ((m = re.exec(code)) !== null) {
-    fonts.add(m[1]);
-  }
+  while ((m = re.exec(code)) !== null) fonts.add(m[1]);
   return [...fonts];
 }
 
-function extractFontSizes(code) {
-  const sizes = new Set();
-  // fontSize: "clamp(...)" or fontSize: "32px" or fontSize: 32
-  const re1 = /fontSize:\s*["']([^"']+)["']/g;
-  const re2 = /fontSize:\s*(\d+)/g;
-  let m;
-  while ((m = re1.exec(code)) !== null) sizes.add(m[1]);
-  while ((m = re2.exec(code)) !== null) sizes.add(m[1] + "px");
-  return [...sizes].sort();
+function extractTypography(code) {
+  const details = {
+    heroFont: null,
+    bodyFont: null,
+    monoFont: null,
+    heroSize: null,
+    heroWeight: null,
+    heroItalic: false,
+    heroLetterSpacing: null,
+    heroLineHeight: null,
+    bodySize: null,
+    labelSize: null,
+    labelTracking: null,
+    labelTransform: null,
+    sectionLabelStyle: null,
+  };
+
+  // Hero heading — look for h1 or the largest clamp
+  const h1Match = code.match(/fontSize:\s*["']?(clamp\([^)]+\))["']?/);
+  if (h1Match) details.heroSize = h1Match[1];
+
+  // Check if hero uses italic
+  const heroBlock = code.match(/<(?:motion\.)?h1[^>]*>[\s\S]*?<\/(?:motion\.)?h1>/);
+  if (heroBlock) {
+    if (heroBlock[0].includes("italic") || heroBlock[0].includes("fontStyle")) {
+      details.heroItalic = true;
+    }
+  }
+
+  // Check for italic spans in hero
+  if (code.includes('fontStyle: "italic"') || code.includes('fontStyle:"italic"') ||
+      code.includes("italic") && code.includes("className")) {
+    details.heroItalic = true;
+  }
+
+  // Font weights
+  const weightMatch = code.match(/fontWeight:\s*(\d+|"[^"]+"|'[^']+')/);
+  if (weightMatch) details.heroWeight = weightMatch[1].replace(/['"]/g, "");
+
+  // Letter spacing patterns
+  const trackingMatch = code.match(/tracking-\[([^\]]+)\]/);
+  if (trackingMatch) details.labelTracking = trackingMatch[1];
+
+  // Label styles — look for uppercase tracking patterns
+  if (code.includes("uppercase")) details.labelTransform = "uppercase";
+  if (code.includes("tracking-[0.25em]") || code.includes("tracking-[0.3em]")) {
+    details.sectionLabelStyle = "uppercase with wide tracking (0.25-0.3em)";
+  } else if (code.includes("tracking-[0.15em]") || code.includes("tracking-[0.2em]")) {
+    details.sectionLabelStyle = "uppercase with moderate tracking (0.15-0.2em)";
+  }
+
+  // Line heights
+  const lhMatch = code.match(/lineHeight:\s*["']?([^"',\s}]+)/);
+  if (lhMatch) details.heroLineHeight = lhMatch[1];
+
+  // Letter spacing on hero
+  const lsMatch = code.match(/letterSpacing:\s*["']([^"']+)["']/);
+  if (lsMatch) details.heroLetterSpacing = lsMatch[1];
+
+  return details;
+}
+
+function extractLayout(code) {
+  const layout = {
+    gridCols: null,
+    maxWidth: null,
+    sectionPadding: null,
+    hasGrain: code.includes("grain"),
+    hasGridPattern: code.includes("backgroundImage") && code.includes("linear-gradient"),
+    hasSvgDecorations: code.includes("<svg") || code.includes("SVG"),
+    hasScrollAnimations: code.includes("useInView") || code.includes("whileInView"),
+    hasParallax: code.includes("useScroll") || code.includes("useTransform"),
+    hasHoverEffects: code.includes("whileHover") || code.includes("onMouseEnter"),
+    navStyle: null,
+    projectLayout: null,
+  };
+
+  // Grid columns
+  const gridMatch = code.match(/grid-cols-(\d)/);
+  if (gridMatch) layout.gridCols = parseInt(gridMatch[1]);
+
+  // Max width
+  const mwMatch = code.match(/maxWidth:\s*["']?(\d+)/);
+  if (mwMatch) layout.maxWidth = parseInt(mwMatch[1]);
+
+  // Nav detection
+  if (code.includes("<nav") || code.includes("position: \"fixed\"") && code.includes("top:")) {
+    layout.navStyle = "fixed top";
+  }
+
+  // Project card style
+  if (code.includes("grid") && code.includes("project")) {
+    layout.projectLayout = "grid cards";
+  } else if (code.includes("flex") && code.includes("project")) {
+    layout.projectLayout = "list rows";
+  }
+
+  return layout;
+}
+
+function extractEffects(code) {
+  const effects = [];
+  if (code.includes("backdrop-filter") || code.includes("backdropFilter")) effects.push("glassmorphism/backdrop blur");
+  if (code.includes("linear-gradient") && code.includes("background")) effects.push("gradient backgrounds");
+  if (code.includes("box-shadow") || code.includes("boxShadow")) effects.push("drop shadows");
+  if (code.includes("border-radius") || code.includes("borderRadius")) effects.push("rounded corners");
+  if (code.includes("text-shadow") || code.includes("textShadow")) effects.push("text shadows");
+  if (code.includes("filter:") || code.includes("filter:")) effects.push("CSS filters");
+  if (code.includes("clip-path") || code.includes("clipPath")) effects.push("clip paths");
+  if (code.includes("mix-blend") || code.includes("mixBlend")) effects.push("blend modes");
+  if (code.includes("opacity")) effects.push("opacity layers");
+  if (code.includes("@keyframes")) effects.push("CSS keyframe animations");
+  if (code.includes("motion.") || code.includes("animate=")) effects.push("scroll-triggered motion");
+  return [...new Set(effects)];
 }
 
 function extractKeyframes(code) {
-  const names = [];
-  const re = /@keyframes\s+([\w-]+)/g;
+  const frames = [];
+  const re = /@keyframes\s+([\w-]+)\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/g;
   let m;
-  while ((m = re.exec(code)) !== null) names.push(m[1]);
-  return names;
+  while ((m = re.exec(code)) !== null) {
+    frames.push({ name: m[1], purpose: guessKeyframePurpose(m[1]) });
+  }
+  return frames;
 }
 
-function detectMood(name, colors) {
-  const bg = colors.bg || colors.background || "";
-  const isDark = bg.startsWith("#0") || bg.startsWith("#1") || bg.startsWith("#2") ||
-    bg.includes("rgba(0") || bg.includes("rgba(10");
-  return isDark ? "dark" : "light";
+function guessKeyframePurpose(name) {
+  const n = name.toLowerCase();
+  if (n.includes("shimmer") || n.includes("shine")) return "shimmer/shine effect";
+  if (n.includes("float") || n.includes("bob")) return "floating/bobbing motion";
+  if (n.includes("pulse") || n.includes("glow")) return "pulsing/glowing";
+  if (n.includes("rotate") || n.includes("spin")) return "rotation";
+  if (n.includes("flow") || n.includes("wave")) return "flowing/wave motion";
+  if (n.includes("fade")) return "fade transition";
+  if (n.includes("slide") || n.includes("reveal")) return "slide/reveal";
+  if (n.includes("blink") || n.includes("cursor")) return "blinking cursor";
+  if (n.includes("drip") || n.includes("drop")) return "drip/drop animation";
+  if (n.includes("rise") || n.includes("fall")) return "rising/falling particles";
+  if (n.includes("morph") || n.includes("blob")) return "shape morphing";
+  if (n.includes("marquee") || n.includes("scroll")) return "scrolling marquee";
+  return "decorative animation";
 }
 
-function getThemeDescription(name) {
-  const descriptions = {
-    abacus: "Ancient computation grid — wooden frame, lacquer beads, brass accents",
-    midnight: "Editorial magazine — gold accents on deep navy",
-    terminal: "Retro computer terminal — green monospace on black",
-    paper: "Clean print design — red accents on warm white",
-    earth: "Organic terrain — muted earth tones, natural textures",
-    brutal: "Raw brutalist — bold yellow on stark black, no decoration",
-    vapor: "Vaporwave aesthetic — pink and purple gradients, retro-future",
-    glass: "Frosted glass morphism — violet accents, blur effects",
-    noir: "Cinema noir — high contrast black and white",
-    neo: "Modern minimal — clean blue on dark, geometric",
-    aurora: "Northern lights — green gradients on deep dark",
-    editorial: "News publication — red and black, strong typography",
-    zen: "Japanese minimalism — red accents, generous whitespace",
-    neon: "Cyberpunk neon — hot pink and electric blue on black",
-    cosmos: "Deep space — cyan stars on void black",
-    cipher: "Cryptographic hacker — emerald green monospace terminal",
-  };
-  return descriptions[name] || `${name.charAt(0).toUpperCase() + name.slice(1)} portfolio theme`;
-}
+const FONT_MAP = {
+  "dm-serif": "DM Serif Display (serif)",
+  "display": "Cormorant Garamond (serif)",
+  "inter": "Inter (sans-serif)",
+  "jetbrains": "JetBrains Mono (monospace)",
+  "orbitron": "Orbitron (display)",
+  "manrope": "Manrope (sans-serif)",
+  "sora": "Sora (sans-serif)",
+  "instrument": "Instrument Serif (serif)",
+  "space-grotesk": "Space Grotesk (sans-serif)",
+  "playfair": "Playfair Display (serif)",
+  "josefin": "Josefin Sans (sans-serif)",
+  "jakarta": "Plus Jakarta Sans (sans-serif)",
+  "body": "Outfit (sans-serif)",
+};
 
-const prompts = {};
+// Generate comprehensive prompts
+const allPrompts = {};
 
 for (const name of themes) {
   const code = readFileSync(join(THEMES_DIR, name, "ThemePage.tsx"), "utf-8");
   const colors = extractColors(code);
   const fonts = extractFonts(code);
-  const fontSizes = extractFontSizes(code);
+  const typo = extractTypography(code);
+  const layout = extractLayout(code);
+  const effects = extractEffects(code);
   const keyframes = extractKeyframes(code);
-  const mood = detectMood(name, colors);
 
-  // Categorize colors
-  const palette = {};
-  for (const [key, val] of Object.entries(colors)) {
-    if (!val.startsWith("rgba") && val.startsWith("#")) {
-      palette[key] = val;
-    }
+  // Get the theme description from comments
+  const descMatch = code.match(/\/\*[\s\S]*?(?:—|──)\s*([^\n*]+)/);
+  const desc = descMatch ? descMatch[1].trim() : `${name} portfolio theme`;
+
+  // Separate solid colors from rgba
+  const solidColors = {};
+  const transparentColors = {};
+  for (const [k, v] of Object.entries(colors)) {
+    if (v.startsWith("rgba")) transparentColors[k] = v;
+    else solidColors[k] = v;
   }
 
-  prompts[name] = {
-    name: name.charAt(0).toUpperCase() + name.slice(1),
-    description: getThemeDescription(name),
-    mood,
-    colors: palette,
-    fonts: fonts.map(f => {
-      const map = {
-        "dm-serif": "DM Serif Display",
-        "display": "Cormorant Garamond",
-        "inter": "Inter",
-        "jetbrains": "JetBrains Mono",
-        "orbitron": "Orbitron",
-        "manrope": "Manrope",
-        "sora": "Sora",
-        "instrument": "Instrument Serif",
-        "space-grotesk": "Space Grotesk",
-        "playfair": "Playfair Display",
-        "josefin": "Josefin Sans",
-        "jakarta": "Plus Jakarta Sans",
-        "body": "Outfit",
-      };
-      return { variable: `--font-${f}`, family: map[f] || f };
-    }),
-    typography: {
-      heroSizes: fontSizes.filter(s => s.includes("clamp") || parseInt(s) > 30),
-      bodySizes: fontSizes.filter(s => {
-        const n = parseInt(s);
-        return !s.includes("clamp") && n >= 12 && n <= 18;
-      }),
-      smallSizes: fontSizes.filter(s => {
-        const n = parseInt(s);
-        return !s.includes("clamp") && n < 12;
-      }),
-    },
-    animations: keyframes,
-    sections: ["navigation", "hero", "projects", "stats", "expertise", "tools", "footer"],
-  };
+  // Determine heading vs body fonts
+  const headingFont = fonts.find(f => ["dm-serif", "display", "playfair", "instrument", "orbitron", "josefin", "sora"].includes(f));
+  const bodyFont = fonts.find(f => ["inter", "manrope", "jakarta", "body", "space-grotesk"].includes(f));
+  const monoFont = fonts.find(f => ["jetbrains"].includes(f));
+
+  // Build the prompt text
+  let prompt = `# ${name.charAt(0).toUpperCase() + name.slice(1)} — Design System Prompt\n\n`;
+  prompt += `## Identity\n`;
+  prompt += `Theme: ${name.charAt(0).toUpperCase() + name.slice(1)}\n`;
+  prompt += `Mood: ${layout.hasGrain ? "textured " : ""}${solidColors.bg && (solidColors.bg.startsWith("#0") || solidColors.bg.startsWith("#1")) ? "dark" : "light"}\n`;
+  prompt += `Description: ${desc}\n\n`;
+
+  prompt += `## Color Palette\n`;
+  prompt += `Primary/Accent Colors:\n`;
+  for (const [k, v] of Object.entries(solidColors)) {
+    if (!k.includes("bg") && !k.includes("text") && !k.includes("muted") && !k.includes("border")) {
+      prompt += `  ${k}: ${v}\n`;
+    }
+  }
+  prompt += `\nBackground: ${solidColors.bg || solidColors.background || "#0a0a0a"}\n`;
+  if (solidColors.text) prompt += `Text: ${solidColors.text}\n`;
+  if (solidColors.card || solidColors.bgCard || solidColors.surface) {
+    prompt += `Surface/Card: ${solidColors.card || solidColors.bgCard || solidColors.surface}\n`;
+  }
+  prompt += `Muted/Secondary: ${Object.entries(solidColors).filter(([k]) => k.includes("muted") || k.includes("Muted")).map(([,v]) => v).join(", ") || "50% opacity text"}\n`;
+  prompt += `Borders: ${Object.entries(colors).filter(([k]) => k.includes("border") || k.includes("Border") || k.includes("rule")).map(([,v]) => v).join(", ") || "subtle white/black opacity"}\n\n`;
+
+  prompt += `## Typography\n`;
+  if (headingFont) prompt += `Heading Font: ${FONT_MAP[headingFont] || headingFont}\n`;
+  if (bodyFont) prompt += `Body Font: ${FONT_MAP[bodyFont] || bodyFont}\n`;
+  if (monoFont) prompt += `Mono/Code Font: ${FONT_MAP[monoFont] || monoFont}\n`;
+  prompt += `\nHeading Style:\n`;
+  prompt += `  Size: ${typo.heroSize || "responsive clamp()"}\n`;
+  prompt += `  Weight: ${typo.heroWeight || "300-400 (light)"}\n`;
+  prompt += `  Italic: ${typo.heroItalic ? "YES — headings use italic for emphasis" : "no"}\n`;
+  if (typo.heroLetterSpacing) prompt += `  Letter Spacing: ${typo.heroLetterSpacing}\n`;
+  if (typo.heroLineHeight) prompt += `  Line Height: ${typo.heroLineHeight}\n`;
+  prompt += `\nLabels & Metadata:\n`;
+  prompt += `  Transform: ${typo.labelTransform || "normal"}\n`;
+  prompt += `  Style: ${typo.sectionLabelStyle || "standard"}\n`;
+  prompt += `  Size: 9-11px\n\n`;
+
+  prompt += `## Layout\n`;
+  prompt += `Max Width: ${layout.maxWidth || 1200}px\n`;
+  prompt += `Navigation: ${layout.navStyle || "fixed top, glass morphism"}\n`;
+  prompt += `Projects: ${layout.projectLayout || "card grid or list"}\n`;
+  prompt += `Sections: navigation → hero → projects → stats → expertise → tools → footer\n\n`;
+
+  prompt += `## Visual Effects\n`;
+  for (const e of effects) prompt += `- ${e}\n`;
+  prompt += `\n`;
+
+  if (keyframes.length > 0) {
+    prompt += `## Animations\n`;
+    for (const kf of keyframes) {
+      prompt += `- ${kf.name}: ${kf.purpose}\n`;
+    }
+    prompt += `\n`;
+  }
+
+  prompt += `## Decorative Elements\n`;
+  if (layout.hasGrain) prompt += `- Film grain texture overlay\n`;
+  if (layout.hasGridPattern) prompt += `- Subtle background grid pattern\n`;
+  if (layout.hasSvgDecorations) prompt += `- Custom SVG decorative illustrations\n`;
+  if (layout.hasParallax) prompt += `- Parallax scroll effects\n`;
+  if (layout.hasHoverEffects) prompt += `- Interactive hover state animations\n`;
+  if (layout.hasScrollAnimations) prompt += `- Scroll-triggered reveal animations\n`;
+  prompt += `\n`;
+
+  prompt += `## Reproduction Instructions\n`;
+  prompt += `To recreate this theme on another website:\n`;
+  prompt += `1. Apply the color palette as CSS custom properties / design tokens\n`;
+  prompt += `2. Load the specified Google Fonts: ${fonts.map(f => FONT_MAP[f] || f).join(", ")}\n`;
+  prompt += `3. Use the heading font for all h1-h3, body font for paragraphs and UI text\n`;
+  prompt += `4. Set labels/metadata to ${typo.sectionLabelStyle || "uppercase with wide letter-spacing"}\n`;
+  prompt += `5. ${typo.heroItalic ? "Use italic style on key heading words for emphasis" : "Keep headings in regular style"}\n`;
+  prompt += `6. Apply ${effects.slice(0, 3).join(", ")} for the signature visual feel\n`;
+  prompt += `7. Dark backgrounds should use the exact hex values above, not approximations\n`;
+
+  allPrompts[name] = prompt;
 }
 
-const output = `// Auto-generated by scripts/generate-style-prompts.mjs
-// Do not edit manually — regenerate with: node scripts/generate-style-prompts.mjs
-
-export const stylePrompts: Record<string, {
-  name: string;
-  description: string;
-  mood: string;
-  colors: Record<string, string>;
-  fonts: { variable: string; family: string }[];
-  typography: { heroSizes: string[]; bodySizes: string[]; smallSizes: string[] };
-  animations: string[];
-  sections: string[];
-}> = ${JSON.stringify(prompts, null, 2)};
-
-export function getStylePromptText(theme: string): string {
-  const p = stylePrompts[theme];
-  if (!p) return "";
-
-  const colorList = Object.entries(p.colors)
-    .map(([k, v]) => \`  \${k}: \${v}\`)
-    .join("\\n");
-
-  const fontList = p.fonts
-    .map(f => \`  \${f.variable}: \${f.family}\`)
-    .join("\\n");
-
-  return \`# \${p.name} Theme Style Guide
-
-## Mood
-\${p.mood} theme — \${p.description}
-
-## Color Palette
-\${colorList}
-
-## Typography
-Fonts:
-\${fontList}
-
-Hero sizes: \${p.typography.heroSizes.join(", ") || "responsive clamp()"}
-Body sizes: \${p.typography.bodySizes.join(", ") || "14-16px"}
-Detail sizes: \${p.typography.smallSizes.join(", ") || "9-11px"}
-
-## Animations
-\${p.animations.length > 0 ? p.animations.join(", ") : "Framer Motion scroll reveals"}
-
-## Page Structure
-\${p.sections.join(" → ")}
-
-## Usage
-Apply this style guide to recreate the \${p.name} aesthetic on any website.
-Use the color palette as the primary design tokens, the fonts for typography hierarchy,
-and the animation style for interactions.\`;
-}
-`;
+// Write TypeScript output
+let output = `// Auto-generated by scripts/generate-style-prompts.mjs\n`;
+output += `// Regenerate: node scripts/generate-style-prompts.mjs\n\n`;
+output += `const prompts: Record<string, string> = ${JSON.stringify(allPrompts, null, 2)};\n\n`;
+output += `export function getStylePromptText(theme: string): string {\n`;
+output += `  return prompts[theme] || "";\n`;
+output += `}\n`;
 
 writeFileSync(join(OUT_DIR, "style-prompts.ts"), output);
-console.log(`✓ Generated style prompts for ${themes.length} themes`);
+console.log(`✓ Generated detailed style prompts for ${themes.length} themes`);
