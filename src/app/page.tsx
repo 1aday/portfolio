@@ -224,11 +224,11 @@ export default function Home() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] sm:w-[700px] sm:h-[700px] rounded-full opacity-[0.07]"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] rounded-full opacity-[0.04]"
             style={{
               background:
-                "radial-gradient(circle, #FF8C42 0%, #FF8C42 20%, transparent 70%)",
-              filter: "blur(80px)",
+                "radial-gradient(circle, #FF8C42 0%, transparent 65%)",
+              filter: "blur(100px)",
             }}
           />
 
@@ -242,65 +242,66 @@ export default function Home() {
             }}
           />
 
-          <div className="relative mx-auto max-w-[1400px] px-4 sm:px-10 w-full text-center">
+          <div className="relative mx-auto max-w-[900px] px-6 sm:px-10 w-full text-center">
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="flex items-center justify-center gap-3 mb-8"
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="flex items-center justify-center gap-3 mb-10 sm:mb-14"
             >
-              <div className="h-1.5 w-1.5 rounded-full bg-[#FF8C42]" />
-              <span className="text-[11px] uppercase tracking-[0.3em] text-white/40">
+              <div className="h-[1px] w-8 bg-[#FF8C42]/30" />
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.35em] text-white/50 font-medium">
                 AI Product Studio
               </span>
-              <div className="h-1.5 w-1.5 rounded-full bg-[#FF8C42]" />
+              <div className="h-[1px] w-8 bg-[#FF8C42]/30" />
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 60 }}
+              initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-              className="font-[family-name:var(--font-display)] text-[clamp(2.5rem,7vw,7rem)] font-light leading-[1.1] tracking-[-0.02em]"
+              transition={{ duration: 1.2, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className="font-[family-name:var(--font-display)] text-[clamp(3rem,8vw,6.5rem)] font-light leading-[1.05] tracking-[-0.03em]"
             >
               I turn{" "}
               <span className="italic text-[#FF8C42]">AI models</span>
               <br />
-              into{" "}
-              <span className="italic text-white/40">products people use</span>
+              into <span className="italic text-white/50">products</span>
+              <br className="sm:hidden" />
+              <span className="italic text-white/50"> people use</span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-8 max-w-xl mx-auto text-[16px] text-white/35 leading-[1.8] font-light"
+              transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-8 sm:mt-10 max-w-lg mx-auto text-[15px] sm:text-[17px] text-white/40 leading-[1.75] font-light"
             >
               End-to-end product ownership — from computer vision and
               multi-model orchestration to pixel-perfect interfaces.
-              30+ shipped applications across 8 industries.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-12 flex justify-center gap-12 sm:gap-20"
+              transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-14 sm:mt-16 flex justify-center gap-10 sm:gap-16"
             >
               {stats.map((stat, i) => (
                 <motion.div
                   key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
                     duration: 0.8,
-                    delay: 0.6 + i * 0.1,
+                    delay: 0.7 + i * 0.1,
                     ease: [0.22, 1, 0.36, 1],
                   }}
+                  className="text-center"
                 >
-                  <div className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl font-light">
+                  <div className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl font-light tracking-tight">
                     {stat.value}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.25em] text-white/30 mt-1">
+                  <div className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] text-white/25 mt-2">
                     {stat.label}
                   </div>
                 </motion.div>
