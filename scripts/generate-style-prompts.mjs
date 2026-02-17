@@ -50,7 +50,13 @@ function extractAll(code) {
       const counts = {};
       textColors.forEach(c => counts[c] = (counts[c] || 0) + 1);
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-      if (sorted[0]) colors.text = sorted[0][0];
+      // Main text = darkest text color (highest usage among dark colors)
+      const darkTexts = Object.entries(counts).filter(([c]) => {
+        const r = parseInt(c.slice(1,3), 16);
+        return r < 100; // dark colors
+      }).sort((a, b) => b[1] - a[1]);
+      if (darkTexts[0]) colors.text = darkTexts[0][0];
+      else if (sorted[0]) colors.text = sorted[0][0];
       // Find ALL saturated accent colors from text, bg, and border
       const allTwColors = [...new Set([...bgColors, ...textColors])];
       const accents = [];
@@ -155,6 +161,29 @@ function extractAll(code) {
   const hasUppercaseLabels = code.includes("uppercase");
   const labelTracking = [...trackings].find(t => parseFloat(t) >= 0.15) || null;
 
+  // Border radius patterns
+  const radiusSet = new Set();
+  const rre = /borderRadius:\s*["']?(\d+|"[^"]+"|'[^']+')/g;
+  while ((fm = rre.exec(code)) !== null) radiusSet.add(fm[1].replace(/['"]/g, ""));
+  const borderRadii = [...radiusSet];
+
+  // Card style detection
+  const hasCards = code.includes("card") || code.includes("Card");
+  const cardBorder = code.match(/border[:\s].*?1px solid/) ? true : false;
+  const cardShadow = code.includes("boxShadow") && hasCards;
+  const cardRoundedMatch = code.match(/(?:card|Card)[\s\S]{0,200}borderRadius:\s*["']?(\d+)/);
+  const cardRadius = cardRoundedMatch ? cardRoundedMatch[1] + "px" : null;
+
+  // Nav style
+  const hasGlassNav = code.includes("backdrop-blur") || code.includes("backdropFilter");
+  const hasFixedNav = code.includes("fixed") && code.includes("top");
+  const hasStickyNav = code.includes("sticky");
+
+  // Section spacing
+  const sectionPaddings = new Set();
+  const sre = /padding:\s*["']([^"']*(?:py|px|60|80|100|120)[^"']*)["']/g;
+  while ((fm = sre.exec(code)) !== null) sectionPaddings.add(fm[1]);
+
   // Hover effects extraction
   const hoverEffects = [];
   if (code.includes("hover:border")) hoverEffects.push("border color change on hover");
@@ -175,13 +204,29 @@ function extractAll(code) {
     heroWeight, heroLineHeight, trackings: [...trackings], maxWidth,
     keyframes, effects, hoverEffects, commentDesc, headingFont, bodyFont, monoFont,
     hasUppercaseLabels, labelTracking, isDark,
+    borderRadii, hasCards, cardBorder, cardShadow, cardRadius,
+    hasGlassNav, hasFixedNav, hasStickyNav,
   };
 }
 
 function buildPrompt(name, d) {
   const Name = name.charAt(0).toUpperCase() + name.slice(1);
   const solidColors = Object.entries(d.colors).filter(([, v]) => !v.startsWith("rgba") && v.startsWith("#"));
-  const accentColors = solidColors.filter(([k]) => !["bg", "background", "text", "card", "bgCard", "surface"].includes(k));
+  const skipKeys = ["bg", "background", "text", "card", "bgCard", "surface", "muted", "dim", "grid", "faded", "fadedLight", "gridLine", "depthNum", "frame", "frameDark"];
+  const accentColors = solidColors.filter(([k, v]) => {
+    if (skipKeys.includes(k)) return false;
+    if (k.includes("Glow") || k.includes("Light") || k.includes("Muted") || k.includes("Dim") || k.includes("Dark") || k.includes("border") || k.includes("Border")) return false;
+    // Skip near-black or near-white colors (not real accents)
+    if (v.length >= 7) {
+      const r = parseInt(v.slice(1,3), 16), g = parseInt(v.slice(3,5), 16), b = parseInt(v.slice(5,7), 16);
+      const lum = (r + g + b) / 3;
+      if (lum < 40) return false; // too dark, not an accent
+      // Skip if same as text color
+      const textC = d.colors.text;
+      if (textC && v.toLowerCase() === textC.toLowerCase()) return false;
+    }
+    return true;
+  });
 
   let p = "";
   p += `# ${Name} Theme — Complete Design System\n\n`;
@@ -239,8 +284,16 @@ function buildPrompt(name, d) {
   p += `  Size: 9-11px\n\n`;
 
   // Layout
-  p += `## Layout\n`;
+  p += `## Layout & Components\n`;
   p += `Max-width: ${d.maxWidth}px\n`;
+  p += `Nav: ${d.hasFixedNav ? "fixed top" : d.hasStickyNav ? "sticky" : "static"}${d.hasGlassNav ? ", glass morphism (backdrop-blur)" : ""}\n`;
+  if (d.hasCards) {
+    p += `Cards: ${d.cardRadius ? `${d.cardRadius} radius` : "sharp or subtle corners"}`;
+    if (d.cardBorder) p += `, 1px solid border`;
+    if (d.cardShadow) p += `, box shadow`;
+    p += `\n`;
+  }
+  if (d.borderRadii.length > 0) p += `Border radii used: ${d.borderRadii.join(", ")}px\n`;
   p += `Structure: nav → hero → projects → stats → expertise → tools → footer\n\n`;
 
   // Effects
@@ -265,12 +318,15 @@ function buildPrompt(name, d) {
 
   // Reproduction
   p += `## How to Reproduce\n`;
-  p += `1. Use exact hex colors above as CSS custom properties\n`;
-  p += `2. Load fonts: ${d.fontList.map(f => FONT_MAP[f] || f).join(", ")}\n`;
-  if (d.headingFont) p += `3. ${FONT_MAP[d.headingFont]} for headings, ${d.bodyFont ? FONT_MAP[d.bodyFont] : "system"} for body\n`;
-  if (d.heroItalic || d.hasItalicSpans) p += `4. Apply italic to emphasis words in headings\n`;
-  if (d.hasUppercaseLabels) p += `${d.heroItalic ? "5" : "4"}. All labels/metadata: uppercase, ${d.labelTracking || "0.2em"} letter-spacing, 10-11px\n`;
-  p += `${d.heroItalic ? "6" : "5"}. Hero heading: ${d.heroWeight || "light weight"}, ${d.heroSize || "large responsive clamp"}\n`;
+  let step = 1;
+  p += `${step++}. Use exact hex colors above as CSS custom properties\n`;
+  p += `${step++}. Load Google Fonts: ${d.fontList.map(f => FONT_MAP[f] || f).join(", ")}\n`;
+  if (d.headingFont) p += `${step++}. ${FONT_MAP[d.headingFont]} for headings, ${d.bodyFont ? FONT_MAP[d.bodyFont] : "system"} for body\n`;
+  p += `${step++}. Hero: ${d.heroWeight || "light weight"}, ${d.heroSize || "large responsive clamp"}${d.heroItalic || d.hasItalicSpans ? ", italic on emphasis words" : ""}\n`;
+  if (d.hasUppercaseLabels) p += `${step++}. Labels: uppercase, ${d.labelTracking || "0.2em"} spacing, 9-11px\n`;
+  if (d.hasGlassNav) p += `${step++}. Nav: fixed top with backdrop-blur glass effect\n`;
+  if (d.effects.includes("film grain texture")) p += `${step++}. Add film grain texture overlay at low opacity\n`;
+  if (d.effects.includes("grid pattern")) p += `${step++}. Add subtle 1px grid background pattern\n`;
 
   return p;
 }
