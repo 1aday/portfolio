@@ -186,13 +186,16 @@ export default function ThemeSwitcher({
     return () => document.removeEventListener("mousedown", handler);
   }, [isOpen]);
 
-  // Close on Escape
+  // Keyboard: Escape to close, ArrowLeft/Right to switch themes
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setIsOpen(false); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) setIsOpen(false);
+      if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+    };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [isOpen]);
+  }, [isOpen, goNext, goPrev]);
 
   // Lock scroll when drawer open on mobile
   useEffect(() => {
