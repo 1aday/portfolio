@@ -1,0 +1,199 @@
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "fs";
+import { join, resolve } from "path";
+
+const ROOT = resolve(import.meta.dirname, "..");
+const THEMES_DIR = join(ROOT, "src", "themes");
+const OUT_DIR = join(ROOT, "src", "app", "data");
+
+if (!existsSync(OUT_DIR)) mkdirSync(OUT_DIR, { recursive: true });
+
+const themes = readdirSync(THEMES_DIR).filter(d =>
+  existsSync(join(THEMES_DIR, d, "ThemePage.tsx"))
+);
+
+function extractColors(code) {
+  // Match const C = { ... };
+  const match = code.match(/const\s+C\s*=\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}/s);
+  if (!match) return {};
+  const block = match[1];
+  const colors = {};
+  const re = /(\w+)\s*:\s*["']([^"']+)["']/g;
+  let m;
+  while ((m = re.exec(block)) !== null) {
+    colors[m[1]] = m[2];
+  }
+  return colors;
+}
+
+function extractFonts(code) {
+  const fonts = new Set();
+  const re = /var\(--font-([a-z-]+)\)/g;
+  let m;
+  while ((m = re.exec(code)) !== null) {
+    fonts.add(m[1]);
+  }
+  return [...fonts];
+}
+
+function extractFontSizes(code) {
+  const sizes = new Set();
+  // fontSize: "clamp(...)" or fontSize: "32px" or fontSize: 32
+  const re1 = /fontSize:\s*["']([^"']+)["']/g;
+  const re2 = /fontSize:\s*(\d+)/g;
+  let m;
+  while ((m = re1.exec(code)) !== null) sizes.add(m[1]);
+  while ((m = re2.exec(code)) !== null) sizes.add(m[1] + "px");
+  return [...sizes].sort();
+}
+
+function extractKeyframes(code) {
+  const names = [];
+  const re = /@keyframes\s+([\w-]+)/g;
+  let m;
+  while ((m = re.exec(code)) !== null) names.push(m[1]);
+  return names;
+}
+
+function detectMood(name, colors) {
+  const bg = colors.bg || colors.background || "";
+  const isDark = bg.startsWith("#0") || bg.startsWith("#1") || bg.startsWith("#2") ||
+    bg.includes("rgba(0") || bg.includes("rgba(10");
+  return isDark ? "dark" : "light";
+}
+
+function getThemeDescription(name) {
+  const descriptions = {
+    abacus: "Ancient computation grid — wooden frame, lacquer beads, brass accents",
+    midnight: "Editorial magazine — gold accents on deep navy",
+    terminal: "Retro computer terminal — green monospace on black",
+    paper: "Clean print design — red accents on warm white",
+    earth: "Organic terrain — muted earth tones, natural textures",
+    brutal: "Raw brutalist — bold yellow on stark black, no decoration",
+    vapor: "Vaporwave aesthetic — pink and purple gradients, retro-future",
+    glass: "Frosted glass morphism — violet accents, blur effects",
+    noir: "Cinema noir — high contrast black and white",
+    neo: "Modern minimal — clean blue on dark, geometric",
+    aurora: "Northern lights — green gradients on deep dark",
+    editorial: "News publication — red and black, strong typography",
+    zen: "Japanese minimalism — red accents, generous whitespace",
+    neon: "Cyberpunk neon — hot pink and electric blue on black",
+    cosmos: "Deep space — cyan stars on void black",
+    cipher: "Cryptographic hacker — emerald green monospace terminal",
+  };
+  return descriptions[name] || `${name.charAt(0).toUpperCase() + name.slice(1)} portfolio theme`;
+}
+
+const prompts = {};
+
+for (const name of themes) {
+  const code = readFileSync(join(THEMES_DIR, name, "ThemePage.tsx"), "utf-8");
+  const colors = extractColors(code);
+  const fonts = extractFonts(code);
+  const fontSizes = extractFontSizes(code);
+  const keyframes = extractKeyframes(code);
+  const mood = detectMood(name, colors);
+
+  // Categorize colors
+  const palette = {};
+  for (const [key, val] of Object.entries(colors)) {
+    if (!val.startsWith("rgba") && val.startsWith("#")) {
+      palette[key] = val;
+    }
+  }
+
+  prompts[name] = {
+    name: name.charAt(0).toUpperCase() + name.slice(1),
+    description: getThemeDescription(name),
+    mood,
+    colors: palette,
+    fonts: fonts.map(f => {
+      const map = {
+        "dm-serif": "DM Serif Display",
+        "display": "Cormorant Garamond",
+        "inter": "Inter",
+        "jetbrains": "JetBrains Mono",
+        "orbitron": "Orbitron",
+        "manrope": "Manrope",
+        "sora": "Sora",
+        "instrument": "Instrument Serif",
+        "space-grotesk": "Space Grotesk",
+        "playfair": "Playfair Display",
+        "josefin": "Josefin Sans",
+        "jakarta": "Plus Jakarta Sans",
+        "body": "Outfit",
+      };
+      return { variable: `--font-${f}`, family: map[f] || f };
+    }),
+    typography: {
+      heroSizes: fontSizes.filter(s => s.includes("clamp") || parseInt(s) > 30),
+      bodySizes: fontSizes.filter(s => {
+        const n = parseInt(s);
+        return !s.includes("clamp") && n >= 12 && n <= 18;
+      }),
+      smallSizes: fontSizes.filter(s => {
+        const n = parseInt(s);
+        return !s.includes("clamp") && n < 12;
+      }),
+    },
+    animations: keyframes,
+    sections: ["navigation", "hero", "projects", "stats", "expertise", "tools", "footer"],
+  };
+}
+
+const output = `// Auto-generated by scripts/generate-style-prompts.mjs
+// Do not edit manually — regenerate with: node scripts/generate-style-prompts.mjs
+
+export const stylePrompts: Record<string, {
+  name: string;
+  description: string;
+  mood: string;
+  colors: Record<string, string>;
+  fonts: { variable: string; family: string }[];
+  typography: { heroSizes: string[]; bodySizes: string[]; smallSizes: string[] };
+  animations: string[];
+  sections: string[];
+}> = ${JSON.stringify(prompts, null, 2)};
+
+export function getStylePromptText(theme: string): string {
+  const p = stylePrompts[theme];
+  if (!p) return "";
+
+  const colorList = Object.entries(p.colors)
+    .map(([k, v]) => \`  \${k}: \${v}\`)
+    .join("\\n");
+
+  const fontList = p.fonts
+    .map(f => \`  \${f.variable}: \${f.family}\`)
+    .join("\\n");
+
+  return \`# \${p.name} Theme Style Guide
+
+## Mood
+\${p.mood} theme — \${p.description}
+
+## Color Palette
+\${colorList}
+
+## Typography
+Fonts:
+\${fontList}
+
+Hero sizes: \${p.typography.heroSizes.join(", ") || "responsive clamp()"}
+Body sizes: \${p.typography.bodySizes.join(", ") || "14-16px"}
+Detail sizes: \${p.typography.smallSizes.join(", ") || "9-11px"}
+
+## Animations
+\${p.animations.length > 0 ? p.animations.join(", ") : "Framer Motion scroll reveals"}
+
+## Page Structure
+\${p.sections.join(" → ")}
+
+## Usage
+Apply this style guide to recreate the \${p.name} aesthetic on any website.
+Use the color palette as the primary design tokens, the fonts for typography hierarchy,
+and the animation style for interactions.\`;
+}
+`;
+
+writeFileSync(join(OUT_DIR, "style-prompts.ts"), output);
+console.log(`✓ Generated style prompts for ${themes.length} themes`);

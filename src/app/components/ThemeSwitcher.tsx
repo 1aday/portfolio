@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useEffect, useState, useCallback } from "react";
+import { getStylePromptText } from "@/app/data/style-prompts";
 
 /* ─── Theme registry ─── */
 const themes = [
@@ -202,6 +203,16 @@ export default function ThemeSwitcher({
   }, [isOpen, isMobile]);
 
   const toggle = useCallback(() => setIsOpen((o) => !o), []);
+  const [copied, setCopied] = useState(false);
+  const copyStyle = useCallback(() => {
+    const themeName = current.replace("/", "") || "default";
+    const text = getStylePromptText(themeName);
+    if (text) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [current]);
 
   const visitedCount = visited.size;
 
@@ -329,11 +340,11 @@ export default function ThemeSwitcher({
           })}
         </div>
 
-        {/* Home link */}
+        {/* Footer */}
         <div style={{
           borderTop: "1px solid rgba(255,255,255,0.06)",
           padding: "8px 12px",
-          textAlign: "center",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <Link href="/" onClick={() => setIsOpen(false)} style={{
             fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
@@ -341,8 +352,45 @@ export default function ThemeSwitcher({
           }}>
             ← All Themes
           </Link>
+          <button onClick={copyStyle} style={{
+            fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
+            color: copied ? "#4ADE80" : `${currentTheme.color}aa`,
+            background: "none", border: "none", cursor: "pointer",
+            padding: "4px 0",
+          }}>
+            {copied ? "✓ Copied" : "Copy Style Prompt"}
+          </button>
         </div>
       </div>
+
+      {/* ─── Copy Style CTA (visible when drawer closed) ─── */}
+      {!isOpen && (
+        <div style={{
+          display: "flex", justifyContent: "center",
+          padding: "0 0 8px",
+          pointerEvents: "auto",
+        }}>
+          <button onClick={copyStyle} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 14px",
+            borderRadius: 20,
+            border: `1px solid ${copied ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.06)"}`,
+            background: copied ? "rgba(74,222,128,0.08)" : "rgba(10,10,10,0.7)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            fontSize: 10, fontWeight: 500, letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: copied ? "#4ADE80" : "rgba(255,255,255,0.4)",
+            cursor: "pointer",
+            transition: "all 0.25s ease",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" />
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+            </svg>
+            {copied ? "Copied!" : "Copy Style"}
+          </button>
+        </div>
+      )}
 
       {/* ─── Bottom bar ─── */}
       <div style={{
